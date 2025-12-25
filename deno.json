@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@google/gemini-cli": "npm:@google/gemini-cli@^0.22.2"
+  }
+}
