@@ -10,11 +10,12 @@ export default function handleRequest(
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  loadContext: unknown
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _: unknown
 ) {
   return new Promise((resolve, reject) => {
     let shellRendered = false;
-    let userAgent = request.headers.get("user-agent");
+    const userAgent = request.headers.get("user-agent");
 
     const readyOption = (userAgent && isbot(userAgent))
       ? "onAllReady"

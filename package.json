@@ -7,11 +7,15 @@
     "dev": "react-router dev",
     "build": "react-router build",
     "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc",
+    "typecheck": "react-router typegen && tsc -b",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@atcute/client": "^4.1.1",
+    "@atcute/identity-resolver": "^1.2.1",
+    "@atcute/lexicons": "^1.2.5",
+    "@atcute/oauth-browser-client": "^2.0.3",
     "@heroicons/react": "^2.2.0",
     "@react-router/fs-routes": "^7.11.0",
     "@react-router/node": "^7.11.0",
