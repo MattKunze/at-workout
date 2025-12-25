@@ -1,3 +1,5 @@
+import { ThemeSelector } from "../components/molecules/ThemeSelector";
+
 export default function Preferences() {
   return (
     <div className="prose">
@@ -15,12 +17,7 @@ export default function Preferences() {
         <label className="label">
           <span className="label-text">Theme</span>
         </label>
-        <select className="select select-bordered" defaultValue="System">
-          <option disabled>Pick one</option>
-          <option>Light</option>
-          <option>Dark</option>
-          <option>System</option>
-        </select>
+        <ThemeSelector />
       </div>
     </div>
   );
