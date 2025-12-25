@@ -4,5 +4,6 @@
   packages = [ pkgs.just ];
 
   # https://devenv.sh/languages/
-  languages.deno.enable = true;
+  languages.javascript.enable = true;
+  languages.javascript.npm.enable = true;
 }
