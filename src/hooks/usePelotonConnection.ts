@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useConnections } from '../contexts/ConnectionsContext';
-import { getUserProfile, PelotonApiError } from '../services/peloton';
+import { usePelotonProfile } from './queries/usePelotonProfile';
+import { usePelotonConnect, usePelotonDisconnect, usePelotonRefreshToken } from './mutations/usePelotonMutations';
 import type { PelotonUserProfile } from '../types/peloton';
 import type { Connection } from '../types/connections';
 
@@ -10,9 +11,10 @@ export interface UsePelotonConnectionReturn {
   connection: Connection | undefined;
   connectionsLoading: boolean;
   
-  // Profile state
+  // Profile state (from React Query)
   profile: PelotonUserProfile | null;
   loadingProfile: boolean;
+  profileError: Error | null;
   
   // Form state
   username: string;
@@ -37,108 +39,60 @@ export interface UsePelotonConnectionReturn {
 
 /**
  * Custom hook to manage Peloton connection state and operations.
- * Encapsulates all business logic for connecting, disconnecting, and managing Peloton account data.
+ * Now uses React Query for data fetching, eliminating manual useEffect and abort controller logic.
  */
 export function usePelotonConnection(): UsePelotonConnectionReturn {
-  const { isConnected, connectPeloton, disconnectPeloton, refreshPelotonToken, getConnection, loading: connectionsLoading } = useConnections();
+  const { isConnected, getConnection, loading: connectionsLoading } = useConnections();
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<PelotonUserProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
 
   const connected = isConnected('peloton');
   const connection = getConnection('peloton');
 
-  // Fetch user profile when connected
-  useEffect(() => {
-    // Create an abort controller to cancel the fetch if the component unmounts
-    const abortController = new AbortController();
-    let ignore = false;
+  // Use React Query for profile fetching - enabled only when connected
+  const { 
+    data: profile = null, 
+    isLoading: loadingProfile,
+    error: profileError,
+  } = usePelotonProfile(connected);
 
-    const fetchProfile = async () => {
-      if (!connected) {
-        setProfile(null);
-        return;
-      }
-
-      setLoadingProfile(true);
-      try {
-        const userProfile = await getUserProfile(abortController.signal);
-        // Only update state if we haven't been told to ignore this fetch
-        if (!ignore) {
-          setProfile(userProfile);
-        }
-      } catch (err) {
-        // Ignore abort errors - they're expected when cleaning up
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-        
-        // Only handle errors if we haven't been told to ignore this fetch
-        if (!ignore) {
-          console.error('Failed to fetch Peloton profile:', err);
-          if (err instanceof PelotonApiError) {
-            setError(`Failed to load profile: ${err.message}`);
-          }
-        }
-      } finally {
-        if (!ignore) {
-          setLoadingProfile(false);
-        }
-      }
-    };
-
-    fetchProfile();
-
-    // Cleanup function: set ignore flag to prevent state updates after unmount
-    return () => {
-      ignore = true;
-      abortController.abort();
-    };
-  }, [connected]);
+  // Mutations
+  const connectMutation = usePelotonConnect();
+  const disconnectMutation = usePelotonDisconnect();
+  const refreshMutation = usePelotonRefreshToken();
 
   const handleConnect = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
     try {
-      await connectPeloton(username, password);
+      await connectMutation.mutateAsync({ username, password });
       setUsername('');
       setPassword('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect');
-    } finally {
-      setLoading(false);
     }
-  }, [username, password, connectPeloton]);
+  }, [username, password, connectMutation]);
 
   const handleDisconnect = useCallback(async () => {
-    setLoading(true);
     try {
-      await disconnectPeloton();
+      setError(null);
+      await disconnectMutation.mutateAsync();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
-    } finally {
-      setLoading(false);
     }
-  }, [disconnectPeloton]);
+  }, [disconnectMutation]);
 
   const handleRefresh = useCallback(async () => {
     setError(null);
-    setRefreshing(true);
     try {
-      await refreshPelotonToken();
+      await refreshMutation.mutateAsync();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refresh token');
-    } finally {
-      setRefreshing(false);
     }
-  }, [refreshPelotonToken]);
+  }, [refreshMutation]);
 
   const formatExpiry = useCallback((expiresAt?: number): string => {
     if (!expiresAt) {
@@ -176,12 +130,13 @@ export function usePelotonConnection(): UsePelotonConnectionReturn {
     connectionsLoading,
     profile,
     loadingProfile,
+    profileError,
     username,
     password,
     setUsername,
     setPassword,
-    loading,
-    refreshing,
+    loading: connectMutation.isPending || disconnectMutation.isPending,
+    refreshing: refreshMutation.isPending,
     error,
     handleConnect,
     handleDisconnect,
