@@ -80,11 +80,167 @@ export interface PelotonApiResponse<T> {
 }
 
 /**
- * Workout summary data
- * Placeholder for future workout-related endpoints
+ * Workout summary data from /api/user/{user_id}/workouts endpoint
  */
 export interface PelotonWorkout {
+  /** Unique workout identifier */
   id: string;
-  // Add fields as needed when we implement workout endpoints
+  
+  /** When the workout was created (Unix timestamp) */
+  created_at: number;
+  
+  /** Device type used (e.g., "bike", "tread", "strength") */
+  device_type?: string;
+  
+  /** Fitness discipline (e.g., "cycling", "running", "strength") */
+  fitness_discipline?: string;
+  
+  /** Whether this is a live or on-demand class */
+  is_total_work_personal_record?: boolean;
+  
+  /** Status of the workout */
+  status?: string;
+  
+  /** Ride/class details */
+  ride?: {
+    /** Ride ID */
+    id: string;
+    /** Ride title */
+    title?: string;
+    /** Ride description */
+    description?: string;
+    /** Instructor details */
+    instructor?: {
+      id: string;
+      name?: string;
+      image_url?: string;
+    };
+    /** Duration in seconds */
+    duration?: number;
+    /** Difficulty rating */
+    difficulty_rating_avg?: number;
+    /** Image URL */
+    image_url?: string;
+  };
+  
+  /** Workout metrics */
+  total_work?: number;
+  distance?: number;
+  calories?: number;
+  
+  // Add more fields as we discover them
+  [key: string]: unknown;
+}
+
+/**
+ * Response from workouts list endpoint
+ */
+export interface PelotonWorkoutsResponse {
+  /** Array of workout summaries */
+  data: PelotonWorkout[];
+  
+  /** Total count of workouts */
+  count?: number;
+  
+  /** Pagination info */
+  page?: number;
+  page_count?: number;
+  limit?: number;
+  total?: number;
+}
+
+/**
+ * Individual metric time series from performance graph
+ * Each metric has an array of values that correspond to seconds_since_pedaling_start
+ */
+export interface PelotonPerformanceMetric {
+  /** Display name for the metric (e.g., "Output", "Cadence") */
+  display_name: string;
+  
+  /** Display unit (e.g., "watts", "rpm", "%") */
+  display_unit: string;
+  
+  /** Metric slug/identifier (e.g., "output", "cadence", "resistance") */
+  slug: string;
+  
+  /** Maximum value achieved during workout */
+  max_value?: number;
+  
+  /** Average value across workout */
+  average_value?: number;
+  
+  /** Array of values corresponding to seconds_since_pedaling_start timestamps */
+  values: number[];
+  
+  /** Heart rate zones (only present for heart_rate metric) */
+  zones?: Array<{
+    display_name: string;
+    slug: string;
+    range: string;
+    duration: number;
+    max_value: number;
+    min_value: number;
+  }>;
+  
+  /** Duration of missing data in seconds (for heart rate) */
+  missing_data_duration?: number;
+  
+  // Add more fields as we discover them
+  [key: string]: unknown;
+}
+
+/**
+ * Response from /api/workout/{workout_id}/performance_graph endpoint
+ */
+export interface PelotonWorkoutPerformance {
+  /** Workout duration in seconds */
+  duration?: number;
+  
+  /** Array of timestamps (in seconds) corresponding to metric values */
+  seconds_since_pedaling_start?: number[];
+  
+  /** Array of metric time series (output, cadence, resistance, speed, heart rate, etc.) */
+  metrics?: PelotonPerformanceMetric[];
+  
+  /** Workout segments (warm up, cycling, cool down, etc.) */
+  segment_list?: Array<{
+    id: string;
+    name: string;
+    length: number;
+    start_time_offset: number;
+    icon_url?: string;
+    icon_name?: string;
+    icon_slug?: string;
+    intensity_in_mets?: number;
+    metrics_type?: string;
+    is_drill?: boolean;
+  }>;
+  
+  /** Summary statistics (totals) */
+  summaries?: Array<{
+    slug: string;
+    value: number;
+    display_name: string;
+    display_unit: string;
+  }>;
+  
+  /** Average metrics across entire workout */
+  average_summaries?: Array<{
+    slug: string;
+    value: number;
+    display_name: string;
+    display_unit: string;
+  }>;
+  
+  /** Whether class plan was shown */
+  is_class_plan_shown?: boolean;
+  
+  /** Whether performance graph data is available */
+  performance_graph_available?: boolean;
+  
+  /** Whether summary data is available */
+  summary_available?: boolean;
+  
+  // Add more fields as we discover them
   [key: string]: unknown;
 }

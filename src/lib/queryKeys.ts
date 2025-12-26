@@ -11,8 +11,8 @@ export const queryKeys = {
   peloton: {
     all: ['peloton'] as const,
     profile: () => [...queryKeys.peloton.all, 'profile'] as const,
-    // Future: add more peloton-related keys
-    // workouts: (filters?: WorkoutFilters) => [...queryKeys.peloton.all, 'workouts', filters] as const,
+    workouts: (userId: string) => [...queryKeys.peloton.all, 'workouts', userId] as const,
+    workoutPerformance: (workoutId: string) => [...queryKeys.peloton.all, 'workout-performance', workoutId] as const,
   },
   // Future: add more service keys as needed
   // bluesky: { ... },
