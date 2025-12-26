@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useConnections } from '../../contexts/ConnectionsContext';
+import { getUserProfile, PelotonApiError } from '../../services/peloton';
+import type { PelotonUserProfile } from '../../types/peloton';
 
 export function PelotonConnector() {
   const { isConnected, connectPeloton, disconnectPeloton, refreshPelotonToken, getConnection } = useConnections();
@@ -8,9 +10,36 @@ export function PelotonConnector() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<PelotonUserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   const connected = isConnected('peloton');
   const connection = getConnection('peloton');
+
+  // Fetch user profile when connected
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!connected) {
+        setProfile(null);
+        return;
+      }
+
+      setLoadingProfile(true);
+      try {
+        const userProfile = await getUserProfile();
+        setProfile(userProfile);
+      } catch (err) {
+        console.error('Failed to fetch Peloton profile:', err);
+        if (err instanceof PelotonApiError) {
+          setError(`Failed to load profile: ${err.message}`);
+        }
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchProfile();
+  }, [connected]);
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +120,39 @@ export function PelotonConnector() {
             Peloton
             <div className="badge badge-success">Connected</div>
           </h3>
+          
+          {/* User Profile Section */}
+          {loadingProfile ? (
+            <div className="flex items-center gap-2 text-sm text-base-content/70">
+              <span className="loading loading-spinner loading-sm"></span>
+              Loading profile...
+            </div>
+          ) : profile ? (
+            <div className="flex items-center gap-3 py-2">
+              {profile.image_url && (
+                <div className="avatar">
+                  <div className="w-12 h-12 rounded-full">
+                    <img src={profile.image_url} alt={profile.username} />
+                  </div>
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="font-semibold">
+                  {profile.first_name && profile.last_name 
+                    ? `${profile.first_name} ${profile.last_name}`
+                    : profile.username
+                  }
+                </div>
+                <div className="text-sm text-base-content/70">@{profile.username}</div>
+                {profile.total_workouts !== undefined && (
+                  <div className="text-xs text-base-content/60 mt-1">
+                    {profile.total_workouts} workouts completed
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+          
           <div className="space-y-2">
             <p className="text-sm text-base-content/70">
               Connected on {new Date(connection.connectedAt).toLocaleDateString()}
