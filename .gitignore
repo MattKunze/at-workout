@@ -2,6 +2,7 @@
 
 node_modules
 build
+bin
 dist
 dist-ssr
 *.local

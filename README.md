@@ -1,4 +1,71 @@
-# React + TypeScript + Vite
+# Parking
+
+A React + TypeScript application for managing parking and fitness integrations.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Go 1.21+ (for building the Peloton OAuth helper)
+- just (command runner)
+
+### Installation
+
+```bash
+npm install
+```
+
+### Building
+
+Build all components including the Peloton OAuth helper:
+
+```bash
+just build
+```
+
+Or build just the Peloton OAuth helper:
+
+```bash
+just build-peloton-oauth
+```
+
+### Development
+
+```bash
+npm run dev
+```
+
+## Features
+
+### Peloton Integration
+
+The application includes Peloton API integration for connecting user accounts. The OAuth flow is handled by a Go binary (`cmd/peloton-oauth/main.go`) which is executed from the Node.js server.
+
+**How it works:**
+1. User enters Peloton credentials in the UI
+2. Node.js server executes the Go binary with credentials as environment variables
+3. Go binary completes the OAuth PKCE flow and returns an access token
+4. Access token is stored in browser localStorage
+
+**Building:** The Peloton OAuth helper must be built before running the app:
+```bash
+just build-peloton-oauth
+```
+
+This creates `build/peloton-oauth` which is executed by the server during authentication.
+
+## Project Structure
+
+- `src/` - React/TypeScript frontend and server code
+- `cmd/peloton-oauth/` - Go binary for Peloton OAuth flow
+- `build/` - Compiled binaries (gitignored)
+
+---
+
+# Original Vite Template README
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
