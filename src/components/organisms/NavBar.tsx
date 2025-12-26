@@ -65,9 +65,6 @@ export const NavBar = () => {
                 <Link to="/preferences">Profile</Link>
               </li>
               <li>
-                <Link to="/preferences">Settings</Link>
-              </li>
-              <li>
                 <a onClick={handleLogout}>Logout</a>
               </li>
             </ul>

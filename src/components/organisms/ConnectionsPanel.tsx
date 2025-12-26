@@ -1,4 +1,4 @@
-import { PelotonConnector } from '../molecules/PelotonConnector';
+import { PelotonConnector } from './PelotonConnector';
 
 export function ConnectionsPanel() {
   return (

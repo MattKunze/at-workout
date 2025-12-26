@@ -4,6 +4,45 @@
 - **Verification:** After completing any feature or modification, always run the project's linting (`npm run lint`) and type-checking (`npm run typecheck`) commands.
 - **Resolution:** All errors and warnings introduced by your changes must be resolved before the task is considered complete.
 
+## Component Architecture (Atomic Design)
+
+This project follows **Atomic Design** principles to maintain a scalable and maintainable component architecture.
+
+### Component Hierarchy
+
+**Molecules (`src/components/molecules/`):**
+- Stateless, prop-driven components
+- No lifecycle methods or complex state management
+- Pure presentation logic only
+- Accept data and callbacks via props
+- Examples: Form inputs, cards, profile displays
+
+**Organisms (`src/components/organisms/`):**
+- Stateful components with lifecycle management
+- Can use hooks for business logic
+- Compose multiple molecules together
+- Handle data fetching, side effects, and complex interactions
+- Examples: Full feature sections, data-driven panels
+
+**Custom Hooks (`src/hooks/`):**
+- Extract and encapsulate business logic from components
+- Manage state, side effects, and API interactions
+- Return data and handlers for components to use
+- Enable reusability across multiple components
+- Examples: Connection management, data fetching patterns
+
+### Guidelines
+
+1. **Keep molecules simple:** If a component needs `useEffect`, complex state, or business logic, it should be an organism or use a custom hook.
+
+2. **Extract logic to hooks:** When an organism grows complex, extract business logic into custom hooks. Hooks should return all necessary state and handlers.
+
+3. **Compose, don't duplicate:** Build organisms by composing molecules. Each molecule should have a single, clear responsibility.
+
+4. **Props over state:** Molecules should receive all data via props. Organisms manage state and pass it down to molecules.
+
+5. **Type everything:** All props interfaces should be explicitly defined and exported if reusable.
+
 ## Future Work: AT Protocol Type Generation
 As the application expands to include features like creating posts or reading feeds, we should transition from manual type casting to automatic Lexicon type generation for full type safety.
 

@@ -34,22 +34,25 @@ export class PelotonApiError extends Error {
 /**
  * Fetch the authenticated user's profile information
  * 
+ * @param signal - Optional AbortSignal to cancel the request
  * @returns User profile data
  * @throws {PelotonApiError} If the request fails
  * 
  * @example
  * ```typescript
+ * const abortController = new AbortController();
  * try {
- *   const profile = await getUserProfile();
+ *   const profile = await getUserProfile(abortController.signal);
  *   console.log(`Hello, ${profile.username}!`);
  * } catch (error) {
  *   if (error instanceof PelotonApiError) {
  *     console.error('Failed to fetch profile:', error.message);
  *   }
  * }
+ * // Later: abortController.abort();
  * ```
  */
-export async function getUserProfile(): Promise<PelotonUserProfile> {
+export async function getUserProfile(signal?: AbortSignal): Promise<PelotonUserProfile> {
   try {
     // Get a valid access token (will refresh if needed)
     const accessToken = await getValidAccessToken('peloton');
@@ -66,6 +69,7 @@ export async function getUserProfile(): Promise<PelotonUserProfile> {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
+      signal,
     });
     
     if (!response.ok) {
@@ -78,6 +82,11 @@ export async function getUserProfile(): Promise<PelotonUserProfile> {
     return data as PelotonUserProfile;
   } catch (error) {
     if (error instanceof PelotonApiError) {
+      throw error;
+    }
+    
+    // Don't treat abort errors as failures
+    if (error instanceof Error && error.name === 'AbortError') {
       throw error;
     }
     
