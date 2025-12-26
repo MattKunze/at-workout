@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router';
 import { useWorkoutPerformance } from '../hooks/queries/useWorkoutPerformance';
+import { WorkoutPerformanceChart } from '../components/molecules/WorkoutPerformanceChart';
 
 export default function WorkoutDetail() {
   const { workoutId } = useParams();
@@ -89,13 +90,18 @@ export default function WorkoutDetail() {
           {performanceData.metrics && performanceData.seconds_since_pedaling_start && (
             <div className="card bg-base-200 shadow-sm">
               <div className="card-body">
-                <h2 className="card-title text-xl mb-4">Performance Data</h2>
-                <div className="alert alert-info">
+                <h2 className="card-title text-xl mb-4">Performance Over Time</h2>
+                
+                {/* Chart */}
+                <WorkoutPerformanceChart performanceData={performanceData} />
+                
+                {/* Data Info */}
+                <div className="alert alert-info mt-6">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                   <div>
-                    <div className="font-semibold">Time Series Data Available</div>
+                    <div className="font-semibold">Time Series Data</div>
                     <div className="text-sm">
                       {performanceData.seconds_since_pedaling_start.length} data points captured • {performanceData.metrics.length} metrics tracked
                     </div>

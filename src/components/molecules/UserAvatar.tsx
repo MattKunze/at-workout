@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserCircleIcon } from "@heroicons/react/24/outline";
+import { UserCircle } from "lucide-react";
 
 interface UserAvatarProps {
   src?: string;
@@ -30,7 +30,7 @@ export const UserAvatar = ({ src, alt, size = 'md', placeholder }: UserAvatarPro
     }
     return (
       <div className={`${containerClass} bg-transparent`}>
-        <UserCircleIcon className="w-full h-full" />
+        <UserCircle className="w-full h-full" />
       </div>
     );
   }

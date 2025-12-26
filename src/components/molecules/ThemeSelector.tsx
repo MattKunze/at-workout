@@ -1,4 +1,4 @@
-import { ComputerDesktopIcon, MoonIcon, SunIcon } from "@heroicons/react/24/outline";
+import { Monitor, Moon, Sun } from "lucide-react";
 
 export const ThemeSelector = () => {
   return (
@@ -11,7 +11,7 @@ export const ThemeSelector = () => {
           aria-label="Light"
           value="light"
         />
-        <SunIcon className="h-4 w-4" />
+        <Sun className="h-4 w-4" />
         <span className="hidden sm:block">Light</span>
       </label>
       <label className="join-item btn btn-sm has-[:checked]:btn-accent">
@@ -22,7 +22,7 @@ export const ThemeSelector = () => {
           aria-label="Dark"
           value="dark"
         />
-        <MoonIcon className="h-4 w-4" />
+        <Moon className="h-4 w-4" />
         <span className="hidden sm:block">Dark</span>
       </label>
       <label className="join-item btn btn-sm has-[:checked]:btn-accent">
@@ -33,7 +33,7 @@ export const ThemeSelector = () => {
           aria-label="System"
           value="default"
         />
-        <ComputerDesktopIcon className="h-4 w-4" />
+        <Monitor className="h-4 w-4" />
         <span className="hidden sm:block">System</span>
       </label>
     </div>

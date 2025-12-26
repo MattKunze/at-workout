@@ -16,16 +16,20 @@
     "@atcute/identity-resolver": "^1.2.1",
     "@atcute/lexicons": "^1.2.5",
     "@atcute/oauth-browser-client": "^2.0.3",
-    "@heroicons/react": "^2.2.0",
     "@react-router/fs-routes": "^7.11.0",
     "@react-router/node": "^7.11.0",
     "@react-router/serve": "^7.11.0",
     "@tanstack/react-query": "^5.90.12",
+    "clsx": "^2.1.1",
     "daisyui": "^4.12.24",
     "isbot": "^5.1.32",
+    "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router": "^7.11.0"
+    "react-router": "^7.11.0",
+    "recharts": "^2.15.4",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
