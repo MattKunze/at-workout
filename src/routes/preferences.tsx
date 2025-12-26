@@ -16,14 +16,7 @@ export default function Preferences() {
       {/* Other Preferences */}
       <div className="prose max-w-2xl">
         <h2>Settings</h2>
-        
-        <div className="form-control">
-          <label className="label cursor-pointer">
-            <span className="label-text">Enable Notifications</span> 
-            <input type="checkbox" className="toggle" defaultChecked />
-          </label>
-        </div>
-        
+
         <div className="form-control w-full max-w-xs">
           <label className="label">
             <span className="label-text">Theme</span>

@@ -1,26 +1,25 @@
 import { Link, useNavigate } from "react-router";
-import { Bars3Icon, BellIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../contexts/AuthContext";
 import { UserAvatar } from "../molecules/UserAvatar";
 
-export interface NavBarProps {
-  onMobileMenuClick: () => void;
-}
-
-export const NavBar = ({ onMobileMenuClick }: NavBarProps) => {
+export const NavBar = () => {
   const { session, userProfile, signOut, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/login');
+    navigate("/login");
   };
 
   const getUserInitials = () => {
     if (userProfile?.displayName) {
-        return userProfile.displayName.split(' ').map(n => n[0]).join('').slice(0, 2);
+      return userProfile.displayName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2);
     }
-    return userProfile?.handle?.slice(0, 2) || '';
+    return userProfile?.handle?.slice(0, 2) || "";
   };
 
   return (
@@ -31,10 +30,6 @@ export const NavBar = ({ onMobileMenuClick }: NavBarProps) => {
         </Link>
       </div>
       <div className="flex-none gap-2">
-        <button className="btn btn-ghost btn-circle">
-          <BellIcon className="h-6 w-6" />
-        </button>
-        
         {loading ? (
           <div className="skeleton w-10 h-10 rounded-full shrink-0"></div>
         ) : session ? (
@@ -44,9 +39,9 @@ export const NavBar = ({ onMobileMenuClick }: NavBarProps) => {
               role="button"
               className="btn btn-ghost btn-circle avatar"
             >
-              <UserAvatar 
-                src={userProfile?.avatar} 
-                alt={userProfile?.displayName || userProfile?.handle} 
+              <UserAvatar
+                src={userProfile?.avatar}
+                alt={userProfile?.displayName || userProfile?.handle}
                 placeholder={getUserInitials()}
                 size="md"
               />
@@ -57,12 +52,12 @@ export const NavBar = ({ onMobileMenuClick }: NavBarProps) => {
             >
               <li className="menu-title text-opacity-100 text-base-content">
                 <div className="flex flex-col gap-1 py-2 px-0">
-                    <span className="font-bold truncate text-base">
-                        {userProfile?.displayName || 'User'}
-                    </span>
-                    <span className="text-xs font-normal opacity-70 truncate">
-                        @{userProfile?.handle || 'handle'}
-                    </span>
+                  <span className="font-bold truncate text-base">
+                    {userProfile?.displayName || "User"}
+                  </span>
+                  <span className="text-xs font-normal opacity-70 truncate">
+                    @{userProfile?.handle || "handle"}
+                  </span>
                 </div>
               </li>
               <div className="divider my-0"></div>
@@ -82,14 +77,6 @@ export const NavBar = ({ onMobileMenuClick }: NavBarProps) => {
             Sign In
           </Link>
         )}
-
-        {/* Mobile Menu Button */}
-        <button
-          className="btn btn-ghost lg:hidden"
-          onClick={onMobileMenuClick}
-        >
-          <Bars3Icon className="h-6 w-6" />
-        </button>
       </div>
     </div>
   );
