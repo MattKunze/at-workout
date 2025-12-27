@@ -103,8 +103,19 @@ export function normalizeChartData(
   // Get segment information
   const segments = performanceData.segment_list || [];
   
-  // Filter out speed metric
-  const metricsToInclude = performanceData.metrics.filter(m => m.slug !== 'speed');
+  // Filter out speed metric and metrics with no valid data
+  const metricsToInclude = performanceData.metrics.filter(m => {
+    if (m.slug === 'speed') return false;
+    
+    // Check if metric has any valid values
+    const validValues = m.values.filter(v => v !== undefined && v !== null);
+    return validValues.length > 0;
+  });
+  
+  // If no metrics remain after filtering, return empty arrays
+  if (metricsToInclude.length === 0) {
+    return [[], []];
+  }
   
   // Calculate min/max for each metric
   const metricStats = metricsToInclude.map(metric => {

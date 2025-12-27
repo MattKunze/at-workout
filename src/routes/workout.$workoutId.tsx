@@ -85,28 +85,33 @@ export default function WorkoutDetail() {
                     </div>
                   )}
                   {/* Other Summary Stats */}
-                  {performanceData.summaries?.map((summary, index) => (
-                    <div key={index} className="stat p-0">
-                      <div className="stat-title text-sm">
-                        {summary.display_name || summary.slug}
+                  {performanceData.summaries
+                    ?.filter(
+                      (summary) =>
+                        summary.value !== undefined && summary.value !== null
+                    )
+                    .map((summary, index) => (
+                      <div key={index} className="stat p-0">
+                        <div className="stat-title text-sm">
+                          {summary.display_name || summary.slug}
+                        </div>
+                        <div className="stat-value text-2xl">
+                          {summary.value.toFixed(0)}
+                        </div>
+                        {summary.display_unit && (
+                          <div className="stat-desc">{summary.display_unit}</div>
+                        )}
                       </div>
-                      <div className="stat-value text-2xl">
-                        {summary.value !== undefined
-                          ? summary.value.toFixed(0)
-                          : "N/A"}
-                      </div>
-                      {summary.display_unit && (
-                        <div className="stat-desc">{summary.display_unit}</div>
-                      )}
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </div>
           )}
 
           {performanceData.metrics &&
-            performanceData.seconds_since_pedaling_start && (
+            performanceData.seconds_since_pedaling_start &&
+            performanceData.metrics.length > 0 &&
+            performanceData.seconds_since_pedaling_start.length > 0 && (
               <WorkoutPerformanceChart performanceData={performanceData} />
             )}
 

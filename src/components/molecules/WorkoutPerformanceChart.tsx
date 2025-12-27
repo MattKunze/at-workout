@@ -118,9 +118,32 @@ export function WorkoutPerformanceChart({
   // Don't render if no data available
   if (normalizedData.length === 0 || metricInfo.length === 0) {
     return (
-      <div className="alert alert-warning">
-        <span>No performance data available to chart.</span>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Workout Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="alert alert-info">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              className="stroke-current shrink-0 w-6 h-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            <span>
+              No performance metrics available to chart. This workout may not
+              have been recorded on Peloton equipment.
+            </span>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
