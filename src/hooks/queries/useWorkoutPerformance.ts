@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getWorkoutPerformance } from '../../services/peloton';
 import { queryKeys } from '../../lib/queryKeys';
+import { db, getCurrentUserId } from '../../lib/db';
 
 /**
  * React Query hook for fetching workout performance time series data.
@@ -33,8 +34,33 @@ export function useWorkoutPerformance(
       if (!workoutId) {
         throw new Error('Workout ID is required to fetch performance data');
       }
-      // React Query handles cancellation automatically
-      return await getWorkoutPerformance(workoutId, everyN);
+
+      // Two-tier caching strategy:
+      // 1. Check IndexedDB first (persistent across sessions)
+      const cached = await db.workoutPerformance.get(workoutId);
+      
+      if (cached) {
+        // Cache hit! Return the stored data
+        return cached.rawData;
+      }
+
+      // 2. Cache miss - fetch from API
+      const data = await getWorkoutPerformance(workoutId, everyN);
+      
+      // 3. Store in IndexedDB for future use
+      const userId = getCurrentUserId();
+      
+      if (userId) {
+        await db.workoutPerformance.put({
+          workoutId,
+          userId,
+          fetchedAt: Date.now(),
+          everyN,
+          rawData: data,
+        });
+      }
+      
+      return data;
     },
     enabled: enabled && !!workoutId,
     // Performance data is static once workout is complete, so cache aggressively

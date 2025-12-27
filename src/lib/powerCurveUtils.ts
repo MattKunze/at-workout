@@ -28,7 +28,7 @@ export interface PowerCurve {
  * Base duration intervals for power curve analysis.
  * Provides fine granularity for short efforts, medium for mid-range, coarser for long efforts.
  */
-const BASE_DURATIONS = [
+export const BASE_DURATIONS = [
   // Fine granularity for short efforts (every 5 seconds)
   5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55,
   

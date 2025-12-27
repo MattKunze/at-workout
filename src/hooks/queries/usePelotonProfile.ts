@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '../../services/peloton';
 import { queryKeys } from '../../lib/queryKeys';
+import { setCurrentUserId } from '../../lib/db';
 
 /**
  * React Query hook for fetching the authenticated Peloton user's profile.
@@ -21,7 +22,14 @@ export function usePelotonProfile(enabled: boolean = true) {
     queryFn: async () => {
       // Note: We no longer need to pass an abort signal
       // React Query handles cancellation automatically
-      return await getUserProfile();
+      const profile = await getUserProfile();
+      
+      // Store user ID for IndexedDB queries
+      if (profile?.id) {
+        setCurrentUserId(profile.id);
+      }
+      
+      return profile;
     },
     enabled,
     // Peloton profile data doesn't change frequently

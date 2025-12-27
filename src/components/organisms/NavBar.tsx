@@ -28,6 +28,13 @@ export const NavBar = () => {
         <Link to="/" className="btn btn-ghost text-xl">
           Parking App
         </Link>
+        {session && (
+          <div className="hidden md:flex ml-4">
+            <Link to="/power-history" className="btn btn-ghost">
+              Power History
+            </Link>
+          </div>
+        )}
       </div>
       <div className="flex-none gap-2">
         {loading ? (
@@ -61,6 +68,9 @@ export const NavBar = () => {
                 </div>
               </li>
               <div className="divider my-0"></div>
+              <li>
+                <Link to="/power-history">Power History</Link>
+              </li>
               <li>
                 <Link to="/preferences">Profile</Link>
               </li>

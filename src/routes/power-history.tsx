@@ -1,0 +1,335 @@
+/**
+ * Power History Page
+ * 
+ * Displays aggregate power curve analysis showing lifetime bests,
+ * yearly progression, and monthly trends.
+ */
+
+import { useState, useEffect } from 'react';
+import { AggregatePowerCurveChart } from '../components/molecules/AggregatePowerCurveChart';
+import {
+  useLifetimePowerCurve,
+  useYearlyPowerCurve,
+  useMonthlyPowerCurve,
+  useAvailableYears,
+  useAvailableMonths,
+} from '../hooks/queries/useAggregatePowerCurves';
+import { getCacheStats, getCurrentUserId } from '../lib/db';
+
+export default function PowerHistory() {
+  const userId = getCurrentUserId();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  // State for year/month selectors
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [cacheStats, setCacheStats] = useState<{
+    workoutCount: number;
+    powerCurveCount: number;
+  } | null>(null);
+
+  // Load cache stats
+  useEffect(() => {
+    async function loadStats() {
+      if (!userId) return;
+      const stats = await getCacheStats(userId);
+      setCacheStats(stats);
+    }
+    loadStats();
+  }, [userId]);
+
+  // Fetch available years and months
+  const { data: availableYears = [] } = useAvailableYears();
+  const { data: availableMonths = [] } = useAvailableMonths(selectedYear);
+
+  // Fetch power curves
+  const { data: lifetimeCurve, isLoading: lifetimeLoading } = useLifetimePowerCurve();
+  const { data: currentYearCurve, isLoading: currentYearLoading } = useYearlyPowerCurve(currentYear);
+  const { data: selectedYearCurve, isLoading: selectedYearLoading } = useYearlyPowerCurve(
+    selectedYear,
+    { enabled: selectedYear !== currentYear }
+  );
+  const { data: selectedMonthCurve, isLoading: selectedMonthLoading } = useMonthlyPowerCurve(
+    selectedYear,
+    selectedMonth
+  );
+
+  if (!userId) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Power History</h1>
+          <p className="text-muted-foreground">
+            Track your power curve progression over time
+          </p>
+        </div>
+
+        <div className="alert alert-info">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="stroke-current shrink-0 w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          <div>
+            <p className="font-semibold">Connect your Peloton account</p>
+            <p className="text-sm">
+              Connect your Peloton account and sync your workout history to view power curve analysis.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!cacheStats || cacheStats.powerCurveCount === 0) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Power History</h1>
+          <p className="text-muted-foreground">
+            Track your power curve progression over time
+          </p>
+        </div>
+
+        <div className="alert alert-warning">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="stroke-current shrink-0 w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            ></path>
+          </svg>
+          <div>
+            <p className="font-semibold">No workout data synced</p>
+            <p className="text-sm">
+              Visit the{' '}
+              <a href="/preferences" className="link link-primary">
+                preferences page
+              </a>{' '}
+              to sync your workout history and enable power curve analysis.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isLoading = lifetimeLoading || currentYearLoading || selectedYearLoading || selectedMonthLoading;
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Power History</h1>
+        <p className="text-muted-foreground">
+          Track your power curve progression over time
+        </p>
+        {cacheStats && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Analyzing {cacheStats.powerCurveCount} workout{cacheStats.powerCurveCount !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="alert alert-info">
+          <span className="loading loading-spinner"></span>
+          <span>Loading power curves...</span>
+        </div>
+      )}
+
+      {/* Lifetime vs Current Year */}
+      {lifetimeCurve && lifetimeCurve.points.length > 0 && (
+        <AggregatePowerCurveChart
+          title="Lifetime Best vs Current Year"
+          description="Compare your all-time best power outputs with your current year performance"
+          curves={[
+            { curve: lifetimeCurve, label: 'Lifetime Best', color: 'oklch(var(--p))' },
+            ...(currentYearCurve && currentYearCurve.points.length > 0
+              ? [{ curve: currentYearCurve, label: `${currentYear}`, color: 'oklch(var(--s))' }]
+              : []
+            ),
+          ]}
+        />
+      )}
+
+      {/* Year Selector and Comparison */}
+      {availableYears.length > 0 && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Yearly Analysis</h2>
+            <div className="flex items-center gap-4">
+              <label className="form-control w-full max-w-xs">
+                <div className="label">
+                  <span className="label-text">Select Year</span>
+                </div>
+                <select
+                  className="select select-bordered"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                >
+                  {availableYears.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          {(selectedYearCurve || (selectedYear === currentYear && currentYearCurve)) && (
+            <AggregatePowerCurveChart
+              title={`${selectedYear} Power Curve`}
+              description={`Your best power outputs for ${selectedYear}`}
+              curves={[
+                {
+                  curve: selectedYear === currentYear
+                    ? currentYearCurve!
+                    : selectedYearCurve!,
+                  label: `${selectedYear}`,
+                  color: 'oklch(var(--a))',
+                },
+              ]}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Monthly Analysis */}
+      {availableMonths.length > 0 && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Monthly Analysis</h2>
+            <div className="flex flex-wrap items-end gap-4">
+              <label className="form-control w-full max-w-xs">
+                <div className="label">
+                  <span className="label-text">Select Month</span>
+                </div>
+                <select
+                  className="select select-bordered"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  disabled={availableMonths.length === 0}
+                >
+                  {availableMonths.map((month) => (
+                    <option key={month} value={month}>
+                      {monthNames[month - 1]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {availableMonths.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No workouts found for {selectedYear}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {selectedMonthCurve && selectedMonthCurve.points.length > 0 && (
+            <AggregatePowerCurveChart
+              title={`${monthNames[selectedMonth - 1]} ${selectedYear} Power Curve`}
+              description={`Your best power outputs for ${monthNames[selectedMonth - 1]} ${selectedYear}`}
+              curves={[
+                {
+                  curve: selectedMonthCurve,
+                  label: `${monthNames[selectedMonth - 1]} ${selectedYear}`,
+                  color: 'oklch(var(--in))',
+                },
+              ]}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Year-over-Year Comparison */}
+      {availableYears.length >= 2 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold mb-4">Year-over-Year Comparison</h2>
+          <YearComparisonChart years={availableYears.slice(0, 3)} />
+        </div>
+      )}
+
+      {/* Quick Stats */}
+      {lifetimeCurve && lifetimeCurve.points.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Personal Records</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { duration: 5, label: '5 Second' },
+              { duration: 60, label: '1 Minute' },
+              { duration: 300, label: '5 Minute' },
+              { duration: 1200, label: '20 Minute' },
+            ].map(({ duration, label }) => {
+              const power = lifetimeCurve.points.find(p => p.duration === duration)?.power;
+              return power ? (
+                <div key={duration} className="card bg-base-200">
+                  <div className="card-body p-4">
+                    <h3 className="text-sm text-muted-foreground">{label} PR</h3>
+                    <p className="text-3xl font-bold">{power.toFixed(0)}<span className="text-lg text-muted-foreground ml-1">W</span></p>
+                  </div>
+                </div>
+              ) : null;
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Helper component to compare multiple years
+ */
+function YearComparisonChart({ years }: { years: number[] }) {
+  const queries = years.map(year => {
+    return {
+      year,
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      query: useYearlyPowerCurve(year),
+    };
+  });
+
+  const curves = queries
+    .filter(({ query }) => query.data && query.data.points.length > 0)
+    .map(({ year, query }, idx) => ({
+      curve: query.data!,
+      label: `${year}`,
+      color: ['oklch(var(--p))', 'oklch(var(--s))', 'oklch(var(--a))'][idx],
+    }));
+
+  if (curves.length === 0) {
+    return null;
+  }
+
+  return (
+    <AggregatePowerCurveChart
+      title="Multi-Year Comparison"
+      description="Compare your power curves across multiple years"
+      curves={curves}
+    />
+  );
+}
