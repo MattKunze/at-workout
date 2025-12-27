@@ -30,7 +30,7 @@ export function usePelotonWorkouts(
   const { limit = 10, page = 0, enabled = true } = options || {};
   
   return useQuery({
-    queryKey: queryKeys.peloton.workouts(userId || ''),
+    queryKey: queryKeys.peloton.workouts(userId || '', { limit, page }),
     queryFn: async () => {
       if (!userId) {
         throw new Error('User ID is required to fetch workouts');

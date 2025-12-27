@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { handleCallback } from "../services/auth";
 import { useAuth } from "../contexts/AuthContext";
 import { useConnections } from "../contexts/ConnectionsContext";
 import { usePelotonProfile } from "../hooks/queries/usePelotonProfile";
 import { usePelotonWorkouts } from "../hooks/queries/usePelotonWorkouts";
-import { WorkoutCard } from "../components/molecules/WorkoutCard";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -77,6 +76,10 @@ function PelotonWorkoutsSection() {
   const { isConnected } = useConnections();
   const isPelotonConnected = isConnected("peloton");
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [limit] = useState(15);
+
   // Fetch profile to get user ID
   const { data: profile, isLoading: isLoadingProfile } =
     usePelotonProfile(isPelotonConnected);
@@ -87,7 +90,8 @@ function PelotonWorkoutsSection() {
     isLoading: isLoadingWorkouts,
     error: workoutsError,
   } = usePelotonWorkouts(profile?.id, {
-    limit: 5,
+    limit,
+    page,
     enabled: isPelotonConnected && !!profile?.id,
   });
 
@@ -95,6 +99,46 @@ function PelotonWorkoutsSection() {
   if (!isPelotonConnected) {
     return null;
   }
+
+  // Format date helper
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  // Format duration helper (convert seconds to mm:ss format)
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return "-";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Format power helper (average watts calculated from total work and duration)
+  const formatAvgPower = (totalWork?: number, duration?: number) => {
+    if (totalWork === undefined || totalWork === null || !duration) return "-";
+    const avgWatts = totalWork / duration;
+    return `${Math.round(avgWatts)} W`;
+  };
+
+  // Format output helper (convert joules to kilojoules)
+  const formatOutput = (joules?: number) => {
+    if (joules === undefined || joules === null || joules === 0) return "-";
+    return `${Math.round(joules / 1000)} kJ`;
+  };
+
+  // Calculate pagination info
+  const totalPages = workoutsData?.total
+    ? Math.ceil(workoutsData.total / limit)
+    : 0;
+  const hasNextPage = page < totalPages - 1;
+  const hasPrevPage = page > 0;
 
   return (
     <div className="mb-8">
@@ -126,21 +170,91 @@ function PelotonWorkoutsSection() {
           </div>
         )}
 
-      {/* Workouts List */}
+      {/* Workouts Table */}
       {workoutsData && workoutsData.data.length > 0 && (
-        <div className="space-y-3">
-          {workoutsData.data.map((workout) => (
-            <WorkoutCard key={workout.id} workout={workout} />
-          ))}
+        <div className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Workout Type</th>
+                  <th>Duration</th>
+                  <th>Avg Power</th>
+                  <th>Total Output</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workoutsData.data.map((workout) => {
+                  return (
+                    <tr key={workout.id} className="hover cursor-pointer">
+                      <td>
+                        <Link to={`/workout/${workout.id}`} className="block">
+                          {formatDate(workout.created_at)}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link to={`/workout/${workout.id}`} className="block">
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {workout.ride?.title || "Workout"}
+                            </span>
+                          </div>
+                        </Link>
+                      </td>
+                      <td>
+                        <Link to={`/workout/${workout.id}`} className="block">
+                          {formatDuration(workout.ride?.duration)}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link to={`/workout/${workout.id}`} className="block">
+                          {formatAvgPower(
+                            workout.total_work,
+                            workout.ride?.duration
+                          )}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link to={`/workout/${workout.id}`} className="block">
+                          {formatOutput(workout.total_work)}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-          {/* Show total count if available */}
-          {workoutsData.total !== undefined &&
-            workoutsData.total > workoutsData.data.length && (
-              <div className="text-center text-sm text-base-content/60 pt-2">
-                Showing {workoutsData.data.length} of {workoutsData.total} total
-                workouts
-              </div>
-            )}
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-base-content/60">
+              Showing {page * limit + 1}-
+              {Math.min((page + 1) * limit, workoutsData.total || 0)} of{" "}
+              {workoutsData.total || 0} workouts
+            </div>
+
+            <div className="join">
+              <button
+                className="join-item btn btn-sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={!hasPrevPage}
+              >
+                Previous
+              </button>
+              <button className="join-item btn btn-sm btn-disabled">
+                Page {page + 1} of {totalPages}
+              </button>
+              <button
+                className="join-item btn btn-sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!hasNextPage}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

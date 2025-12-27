@@ -89,17 +89,29 @@ export interface PelotonWorkout {
   /** When the workout was created (Unix timestamp) */
   created_at: number;
   
-  /** Device type used (e.g., "bike", "tread", "strength") */
+  /** When the workout started (Unix timestamp) */
+  start_time?: number;
+  
+  /** When the workout ended (Unix timestamp) */
+  end_time?: number;
+  
+  /** Device type used (e.g., "home_bike_v1", "fitbit") */
   device_type?: string;
   
   /** Fitness discipline (e.g., "cycling", "running", "strength") */
   fitness_discipline?: string;
   
-  /** Whether this is a live or on-demand class */
+  /** Whether this is a total work personal record */
   is_total_work_personal_record?: boolean;
+  
+  /** Whether this is an outdoor workout */
+  is_outdoor?: boolean;
   
   /** Status of the workout */
   status?: string;
+  
+  /** Type of workout: "class" or "freestyle" */
+  workout_type?: string;
   
   /** Ride/class details */
   ride?: {
@@ -111,7 +123,7 @@ export interface PelotonWorkout {
     description?: string;
     /** Instructor details */
     instructor?: {
-      id: string;
+      id?: string;
       name?: string;
       image_url?: string;
     };
@@ -121,6 +133,8 @@ export interface PelotonWorkout {
     difficulty_rating_avg?: number;
     /** Image URL */
     image_url?: string;
+    /** Whether this ride is archived */
+    is_archived?: boolean;
   };
   
   /** Workout metrics */
