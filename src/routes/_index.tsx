@@ -60,13 +60,7 @@ export default function Dashboard() {
     );
   }
 
-  return (
-    <>
-      <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-
-      <PelotonWorkoutsSection />
-    </>
-  );
+  return <PelotonWorkoutsSection />;
 }
 
 /**
@@ -142,8 +136,6 @@ function PelotonWorkoutsSection() {
 
   return (
     <div className="mb-8">
-      <h2 className="text-2xl font-semibold mb-4">Recent Workouts</h2>
-
       {/* Loading State */}
       {(isLoadingProfile || isLoadingWorkouts) && (
         <div className="flex items-center gap-2 p-4">
