@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, Link, useSearchParams } from "react-router";
 import { handleCallback } from "../services/auth";
 import { useAuth } from "../contexts/AuthContext";
 import { useConnections } from "../contexts/ConnectionsContext";
@@ -69,10 +69,28 @@ export default function Dashboard() {
 function PelotonWorkoutsSection() {
   const { isConnected } = useConnections();
   const isPelotonConnected = isConnected("peloton");
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Pagination state
-  const [page, setPage] = useState(0);
+  // Pagination state - read from URL or default to 0
+  const page = parseInt(searchParams.get("page") || "0", 10);
   const [limit] = useState(15);
+
+  // Helper to update page in URL
+  const setPage = (newPage: number | ((prev: number) => number)) => {
+    const nextPage = typeof newPage === "function" ? newPage(page) : newPage;
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (nextPage === 0) {
+          next.delete("page");
+        } else {
+          next.set("page", nextPage.toString());
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   // Fetch profile to get user ID
   const { data: profile, isLoading: isLoadingProfile } =
