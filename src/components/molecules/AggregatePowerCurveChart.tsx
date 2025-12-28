@@ -97,6 +97,63 @@ const DEFAULT_COLORS = [
 ];
 
 /**
+ * Calculate deltas between two power curves
+ */
+interface DeltaComparison {
+  baseline: PowerCurveComparison;
+  comparison: PowerCurveComparison;
+  deltas: Array<{
+    duration: number;
+    durationLabel: string;
+    baselinePower: number;
+    comparisonPower: number;
+    delta: number;
+    percentChange: number;
+  }>;
+}
+
+function calculateDeltas(
+  baseline: PowerCurveComparison,
+  comparison: PowerCurveComparison
+): DeltaComparison {
+  // Get all common durations
+  const baselineMap = new Map(
+    baseline.curve.points.map((p) => [p.duration, p.power])
+  );
+  const comparisonMap = new Map(
+    comparison.curve.points.map((p) => [p.duration, p.power])
+  );
+
+  const commonDurations = Array.from(baselineMap.keys()).filter((d) =>
+    comparisonMap.has(d)
+  );
+
+  const deltas = commonDurations
+    .map((duration) => {
+      const baselinePower = baselineMap.get(duration)!;
+      const comparisonPower = comparisonMap.get(duration)!;
+      const delta = comparisonPower - baselinePower;
+      const percentChange = (delta / baselinePower) * 100;
+
+      return {
+        duration,
+        durationLabel: formatDuration(duration),
+        baselinePower,
+        comparisonPower,
+        delta,
+        percentChange,
+      };
+    })
+    .sort((a, b) => a.duration - b.duration);
+
+  return {
+    baseline,
+    comparison,
+    deltas,
+  };
+}
+
+/**
  * AggregatePowerCurveChart - Displays multiple power curves for comparison
  *
  * A stateless molecule component that renders overlaid power curves showing
@@ -147,6 +204,10 @@ export function AggregatePowerCurveChart({
   const visibleValidCurves = validCurves.filter((c) =>
     visibleCurves.has(c.label)
   );
+
+  // Calculate deltas when exactly two curves are selected
+  const showDeltas = visibleValidCurves.length === 2;
+  const deltaData = showDeltas ? calculateDeltas(visibleValidCurves[0], visibleValidCurves[1]) : null;
 
   // Don't render if no valid curves
   if (validCurves.length === 0) {
@@ -378,6 +439,124 @@ export function AggregatePowerCurveChart({
             );
           })}
         </div>
+
+        {/* Delta Comparison - shown when exactly 2 curves are selected */}
+        {showDeltas && deltaData && (
+          <div className="mt-6 pt-6 border-t">
+            <h3 className="text-lg font-semibold mb-4">
+              Comparison: {deltaData.comparison.label} vs {deltaData.baseline.label}
+            </h3>
+            
+            {/* Key Duration Deltas */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {[5, 60, 300, 1200].map((duration) => {
+                const delta = deltaData.deltas.find((d) => d.duration === duration);
+                if (!delta) return null;
+
+                const isPositive = delta.delta > 0;
+                const isNegative = delta.delta < 0;
+
+                return (
+                  <div
+                    key={duration}
+                    className="flex flex-col p-3 rounded-md bg-muted/30"
+                  >
+                    <div className="text-xs text-muted-foreground mb-1">
+                      {formatDuration(duration)}
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span
+                        className={`text-2xl font-bold ${
+                          isPositive
+                            ? "text-success"
+                            : isNegative
+                            ? "text-error"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {isPositive ? "+" : ""}
+                        {delta.delta.toFixed(0)}W
+                      </span>
+                      <span
+                        className={`text-sm ${
+                          isPositive
+                            ? "text-success"
+                            : isNegative
+                            ? "text-error"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        ({isPositive ? "+" : ""}
+                        {delta.percentChange.toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {delta.baselinePower.toFixed(0)}W → {delta.comparisonPower.toFixed(0)}W
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Full Delta Table */}
+            <details className="text-xs">
+              <summary className="cursor-pointer text-muted-foreground hover:text-foreground mb-3">
+                View all durations
+              </summary>
+              <div className="overflow-x-auto">
+                <table className="table table-xs">
+                  <thead>
+                    <tr>
+                      <th>Duration</th>
+                      <th className="text-right">{deltaData.baseline.label}</th>
+                      <th className="text-right">{deltaData.comparison.label}</th>
+                      <th className="text-right">Delta</th>
+                      <th className="text-right">Change</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deltaData.deltas.map((delta) => {
+                      const isPositive = delta.delta > 0;
+                      const isNegative = delta.delta < 0;
+
+                      return (
+                        <tr key={delta.duration}>
+                          <td>{delta.durationLabel}</td>
+                          <td className="text-right">{delta.baselinePower.toFixed(0)}W</td>
+                          <td className="text-right">{delta.comparisonPower.toFixed(0)}W</td>
+                          <td
+                            className={`text-right font-bold ${
+                              isPositive
+                                ? "text-success"
+                                : isNegative
+                                ? "text-error"
+                                : ""
+                            }`}
+                          >
+                            {isPositive ? "+" : ""}
+                            {delta.delta.toFixed(0)}W
+                          </td>
+                          <td
+                            className={`text-right ${
+                              isPositive
+                                ? "text-success"
+                                : isNegative
+                                ? "text-error"
+                                : ""
+                            }`}
+                          >
+                            {isPositive ? "+" : ""}
+                            {delta.percentChange.toFixed(1)}%
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
