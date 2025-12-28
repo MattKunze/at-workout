@@ -50,7 +50,7 @@ export interface PowerCurveCache {
   
   /** Metadata about the workout for filtering/sorting */
   metadata: {
-    /** Workout date (Unix timestamp from created_at) */
+    /** Workout date (Unix timestamp in milliseconds) */
     workoutDate: number;
     
     /** Type of workout (e.g., "cycling") */

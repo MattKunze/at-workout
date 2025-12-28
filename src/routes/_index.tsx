@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useConnections } from "../contexts/ConnectionsContext";
 import { usePelotonProfile } from "../hooks/queries/usePelotonProfile";
 import { usePelotonWorkouts } from "../hooks/queries/usePelotonWorkouts";
+import { useWorkoutCache } from "../hooks/useWorkoutCache";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -174,6 +175,16 @@ function PelotonWorkoutsSection() {
     enabled: isPelotonConnected && !!profile?.id,
   });
 
+  // Get workout IDs for cache checking
+  const workoutIds = useMemo(
+    () => workoutsData?.data.map((w) => w.id) || [],
+    [workoutsData]
+  );
+
+  // Check cache status and provide fetch functionality
+  const { isCached, fetchWorkoutData, isFetching, fetchingWorkoutId, queueLength, isAutoFetching } =
+    useWorkoutCache(workoutIds, { autoFetch: true });
+
   // Show message if not connected
   if (!isPelotonConnected) {
     return (
@@ -182,7 +193,8 @@ function PelotonWorkoutsSection() {
           <div className="card-body">
             <h2 className="card-title justify-center">Connect Peloton</h2>
             <p className="text-center text-base-content/70 mt-2">
-              You haven't connected your Peloton account yet. Connect it to view your workout history and power curves.
+              You haven't connected your Peloton account yet. Connect it to view
+              your workout history and power curves.
             </p>
             <div className="card-actions justify-center mt-4">
               <Link to="/preferences" className="btn btn-primary">
@@ -275,10 +287,15 @@ function PelotonWorkoutsSection() {
                   <th>Duration</th>
                   <th>Avg Power</th>
                   <th>Total Output</th>
+                  <th className="w-12">Cache</th>
                 </tr>
               </thead>
               <tbody>
                 {workoutsData.data.map((workout) => {
+                  const cached = isCached(workout.id);
+                  const isCurrentlyFetching =
+                    isFetching && fetchingWorkoutId === workout.id;
+
                   return (
                     <tr key={workout.id} className="hover cursor-pointer">
                       <td>
@@ -312,6 +329,61 @@ function PelotonWorkoutsSection() {
                         <Link to={`/workout/${workout.id}`} className="block">
                           {formatOutput(workout.total_work)}
                         </Link>
+                      </td>
+                      <td>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (!cached && !isCurrentlyFetching) {
+                              fetchWorkoutData(workout.id);
+                            }
+                          }}
+                          className={`btn btn-xs btn-ghost ${
+                            cached ? "text-success" : "text-base-content/40"
+                          }`}
+                          disabled={isCurrentlyFetching}
+                          title={
+                            cached
+                              ? "Performance data cached"
+                              : isCurrentlyFetching
+                                ? "Fetching..."
+                                : "Click to cache performance data"
+                          }
+                        >
+                          {isCurrentlyFetching ? (
+                            <span className="loading loading-spinner loading-xs"></span>
+                          ) : cached ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                              />
+                            </svg>
+                          )}
+                        </button>
                       </td>
                     </tr>
                   );
@@ -347,6 +419,18 @@ function PelotonWorkoutsSection() {
                 Next
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating toast for auto-fetch status */}
+      {isAutoFetching && (
+        <div className="toast toast-bottom toast-center">
+          <div className="alert alert-info shadow-lg">
+            <span className="loading loading-spinner loading-sm"></span>
+            <span>
+              Caching workout data... ({queueLength} remaining)
+            </span>
           </div>
         </div>
       )}

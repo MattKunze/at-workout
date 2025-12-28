@@ -281,7 +281,7 @@ function getTimeRangeForAggregate(
  * 
  * @param userId - Peloton user ID
  * @param workoutId - Workout ID that was added/updated
- * @param workoutDate - Date of the workout (Unix timestamp)
+ * @param workoutDate - Date of the workout (Unix timestamp in milliseconds)
  */
 export async function invalidateAggregatesForWorkout(
   userId: string,
@@ -512,4 +512,18 @@ export async function getRecentDaysPowerCurve(
   days: number
 ): Promise<PowerCurve> {
   return await getAggregatePowerCurve(userId, 'days', { days });
+}
+
+/**
+ * Clear all aggregate caches for a user
+ * Internal function used by useWorkoutCache to invalidate caches
+ * 
+ * @param userId - Peloton user ID
+ * @internal
+ */
+export async function clearAllAggregateCaches(userId: string): Promise<void> {
+  await db.aggregateCurves
+    .where('userId')
+    .equals(userId)
+    .delete();
 }
