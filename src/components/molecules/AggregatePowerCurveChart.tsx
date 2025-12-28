@@ -9,7 +9,7 @@
  */
 
 import { useState } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -79,6 +79,60 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Custom tooltip for delta chart
+ */
+interface DeltaTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    dataKey: string;
+    payload: {
+      duration: number;
+      durationLabel: string;
+      delta: number;
+    };
+  }>;
+}
+
+function DeltaTooltip({ active, payload }: DeltaTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const data = payload[0]?.payload;
+  const delta = data.delta;
+  const isPositive = delta > 0;
+  const isNegative = delta < 0;
+
+  return (
+    <div className="rounded-lg border bg-background p-3 shadow-sm">
+      <div className="grid gap-2">
+        <div className="flex flex-col">
+          <span className="text-xs text-muted-foreground">Duration</span>
+          <span className="font-bold text-sm">{data.durationLabel}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-xs">Delta</span>
+          <div className="flex items-baseline gap-1">
+            <span
+              className={`font-bold text-sm ${
+                isPositive
+                  ? "text-success"
+                  : isNegative
+                  ? "text-error"
+                  : ""
+              }`}
+            >
+              {isPositive ? "+" : ""}
+              {delta.toFixed(0)}
+            </span>
+            <span className="text-xs text-muted-foreground">W</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -206,8 +260,11 @@ export function AggregatePowerCurveChart({
   );
 
   // Calculate deltas when exactly two curves are selected
+  // Assume curves are ordered from older to newer, so compare [1] - [0]
   const showDeltas = visibleValidCurves.length === 2;
-  const deltaData = showDeltas ? calculateDeltas(visibleValidCurves[0], visibleValidCurves[1]) : null;
+  const deltaData = showDeltas 
+    ? calculateDeltas(visibleValidCurves[0], visibleValidCurves[1]) 
+    : null;
 
   // Don't render if no valid curves
   if (validCurves.length === 0) {
@@ -274,6 +331,19 @@ export function AggregatePowerCurveChart({
 
     return dataPoint;
   });
+
+  // Build delta chart data when comparing two curves
+  const deltaChartData = deltaData
+    ? deltaData.deltas.map((d) => ({
+        duration: d.duration,
+        durationLabel: d.durationLabel,
+        delta: d.delta,
+        // Split delta into positive and negative for color coding
+        deltaPositive: d.delta > 0 ? d.delta : null,
+        deltaNegative: d.delta < 0 ? d.delta : null,
+        deltaZero: d.delta === 0 ? 0 : null,
+      }))
+    : [];
 
   // Build chart configuration for all curves (not just visible)
   const chartConfig: ChartConfig = {};
@@ -440,121 +510,123 @@ export function AggregatePowerCurveChart({
           })}
         </div>
 
-        {/* Delta Comparison - shown when exactly 2 curves are selected */}
-        {showDeltas && deltaData && (
-          <div className="mt-6 pt-6 border-t">
+        {/* Delta Comparison Chart - shown when exactly 2 curves are selected */}
+        {showDeltas && deltaData && deltaChartData.length > 0 && (
+          <div className="mt-8 pt-6 border-t">
             <h3 className="text-lg font-semibold mb-4">
-              Comparison: {deltaData.comparison.label} vs {deltaData.baseline.label}
+              Delta: {deltaData.comparison.label} vs {deltaData.baseline.label}
             </h3>
-            
-            {/* Key Duration Deltas */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {[5, 60, 300, 1200].map((duration) => {
-                const delta = deltaData.deltas.find((d) => d.duration === duration);
-                if (!delta) return null;
+            <p className="text-sm text-muted-foreground mb-4">
+              Positive values (green) show improvements, negative values (red) show declines
+            </p>
 
-                const isPositive = delta.delta > 0;
-                const isNegative = delta.delta < 0;
-
-                return (
-                  <div
-                    key={duration}
-                    className="flex flex-col p-3 rounded-md bg-muted/30"
+            <ChartContainer
+              config={{
+                deltaPositive: {
+                  label: "Gain",
+                  color: "oklch(var(--su))",
+                },
+                deltaNegative: {
+                  label: "Loss",
+                  color: "oklch(var(--er))",
+                },
+              }}
+              className="h-[250px] w-full"
+            >
+              <AreaChart
+                data={deltaChartData}
+                margin={{ top: 5, right: 10, left: 10, bottom: 25 }}
+              >
+                <defs>
+                  <linearGradient
+                    id="fill-positive"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
                   >
-                    <div className="text-xs text-muted-foreground mb-1">
-                      {formatDuration(duration)}
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span
-                        className={`text-2xl font-bold ${
-                          isPositive
-                            ? "text-success"
-                            : isNegative
-                            ? "text-error"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {isPositive ? "+" : ""}
-                        {delta.delta.toFixed(0)}W
-                      </span>
-                      <span
-                        className={`text-sm ${
-                          isPositive
-                            ? "text-success"
-                            : isNegative
-                            ? "text-error"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        ({isPositive ? "+" : ""}
-                        {delta.percentChange.toFixed(1)}%)
-                      </span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {delta.baselinePower.toFixed(0)}W → {delta.comparisonPower.toFixed(0)}W
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    <stop
+                      offset="5%"
+                      stopColor="oklch(var(--su))"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="oklch(var(--su))"
+                      stopOpacity={0.1}
+                    />
+                  </linearGradient>
+                  <linearGradient
+                    id="fill-negative"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor="oklch(var(--er))"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="oklch(var(--er))"
+                      stopOpacity={0.1}
+                    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="duration"
+                  domain={["dataMin", "dataMax"]}
+                  type="number"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  ticks={keyDurations}
+                  tickFormatter={formatXAxisTick}
+                  label={{
+                    value: "Duration",
+                    position: "insideBottom",
+                    offset: -20,
+                  }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  label={{
+                    value: "Power Delta (watts)",
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                />
+                <ReferenceLine y={0} stroke="oklch(var(--bc)/0.2)" strokeWidth={1} />
+                <ChartTooltip content={<DeltaTooltip />} />
 
-            {/* Full Delta Table */}
-            <details className="text-xs">
-              <summary className="cursor-pointer text-muted-foreground hover:text-foreground mb-3">
-                View all durations
-              </summary>
-              <div className="overflow-x-auto">
-                <table className="table table-xs">
-                  <thead>
-                    <tr>
-                      <th>Duration</th>
-                      <th className="text-right">{deltaData.baseline.label}</th>
-                      <th className="text-right">{deltaData.comparison.label}</th>
-                      <th className="text-right">Delta</th>
-                      <th className="text-right">Change</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deltaData.deltas.map((delta) => {
-                      const isPositive = delta.delta > 0;
-                      const isNegative = delta.delta < 0;
+                {/* Render positive deltas */}
+                <Area
+                  type="monotone"
+                  dataKey="deltaPositive"
+                  stroke="oklch(var(--su))"
+                  fill="url(#fill-positive)"
+                  strokeWidth={2}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
 
-                      return (
-                        <tr key={delta.duration}>
-                          <td>{delta.durationLabel}</td>
-                          <td className="text-right">{delta.baselinePower.toFixed(0)}W</td>
-                          <td className="text-right">{delta.comparisonPower.toFixed(0)}W</td>
-                          <td
-                            className={`text-right font-bold ${
-                              isPositive
-                                ? "text-success"
-                                : isNegative
-                                ? "text-error"
-                                : ""
-                            }`}
-                          >
-                            {isPositive ? "+" : ""}
-                            {delta.delta.toFixed(0)}W
-                          </td>
-                          <td
-                            className={`text-right ${
-                              isPositive
-                                ? "text-success"
-                                : isNegative
-                                ? "text-error"
-                                : ""
-                            }`}
-                          >
-                            {isPositive ? "+" : ""}
-                            {delta.percentChange.toFixed(1)}%
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </details>
+                {/* Render negative deltas */}
+                <Area
+                  type="monotone"
+                  dataKey="deltaNegative"
+                  stroke="oklch(var(--er))"
+                  fill="url(#fill-negative)"
+                  strokeWidth={2}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ChartContainer>
           </div>
         )}
       </CardContent>
