@@ -457,6 +457,7 @@ export function AggregatePowerCurveChart({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
+              domain={showDeltas ? ['auto', 'auto'] : [0, 'auto']}
               label={{
                 value: "Power (watts)",
                 angle: -90,
