@@ -10,7 +10,7 @@
  */
 
 import { getValidAccessToken } from './pelotonTokens';
-import type { PelotonUserProfile, PelotonWorkoutsResponse, PelotonWorkoutPerformance } from '../types/peloton';
+import type { PelotonUserProfile, PelotonWorkoutsResponse, PelotonWorkoutPerformance, PelotonWorkout } from '../types/peloton';
 
 /**
  * Error thrown when Peloton API requests fail
@@ -260,4 +260,73 @@ export async function getWorkoutPerformance(
   }
 }
 
+/**
+ * Fetch detailed workout information
+ * 
+ * @param workoutId - The Peloton workout ID
+ * @param signal - Optional AbortSignal to cancel the request
+ * @returns Workout details including ride information
+ * @throws {PelotonApiError} If the request fails
+ * 
+ * @example
+ * ```typescript
+ * try {
+ *   const workout = await getWorkoutDetails('workout123');
+ *   console.log(`${workout.ride?.title || 'Unknown'} by ${workout.ride?.instructor?.name || 'Unknown'}`);
+ * } catch (error) {
+ *   if (error instanceof PelotonApiError) {
+ *     console.error('Failed to fetch workout details:', error.message);
+ *   }
+ * }
+ * ```
+ */
+export async function getWorkoutDetails(
+  workoutId: string,
+  signal?: AbortSignal
+): Promise<PelotonWorkout> {
+  try {
+    // Get a valid access token (will refresh if needed)
+    const accessToken = await getValidAccessToken('peloton');
+    
+    if (!accessToken) {
+      throw new PelotonApiError(
+        'Not authenticated with Peloton. Please connect your account first.'
+      );
+    }
+    
+    const url = `/api/peloton/workout/${workoutId}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      signal,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = (errorData as { error?: string }).error || `Request failed with status ${response.status}`;
+      throw new PelotonApiError(errorMessage, response.status, errorData);
+    }
+    
+    const data = await response.json();
+    return data as PelotonWorkout;
+  } catch (error) {
+    if (error instanceof PelotonApiError) {
+      throw error;
+    }
+    
+    // Don't treat abort errors as failures
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw error;
+    }
+    
+    if (error instanceof Error) {
+      throw new PelotonApiError(`Failed to fetch workout details: ${error.message}`);
+    }
+    
+    throw new PelotonApiError('Unknown error occurred while fetching workout details');
+  }
+}
 

@@ -50,13 +50,6 @@ export default function PowerHistory() {
   if (!userId) {
     return (
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Power History</h1>
-          <p className="text-muted-foreground">
-            Track your power curve progression over time
-          </p>
-        </div>
-
         <div className="alert alert-info">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -86,13 +79,6 @@ export default function PowerHistory() {
   if (!cacheStats || cacheStats.powerCurveCount === 0) {
     return (
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Power History</h1>
-          <p className="text-muted-foreground">
-            Track your power curve progression over time
-          </p>
-        </div>
-
         <div className="alert alert-warning">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -127,17 +113,6 @@ export default function PowerHistory() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Power History</h1>
-        {cacheStats && (
-          <p className="text-sm text-muted-foreground mt-2">
-            Analyzing {cacheStats.powerCurveCount} workout
-            {cacheStats.powerCurveCount !== 1 ? "s" : ""}
-          </p>
-        )}
-      </div>
-
       {/* Loading State */}
       {isLoading && (
         <div className="alert alert-info">
@@ -150,6 +125,11 @@ export default function PowerHistory() {
       {lifetimeCurve && lifetimeCurve.points.length > 0 && (
         <AggregatePowerCurveChart
           title="Power Curve Analysis"
+          description={
+            cacheStats
+              ? `Analyzing ${cacheStats.powerCurveCount} workout ${cacheStats.powerCurveCount !== 1 ? "s" : ""}`
+              : ""
+          }
           curves={[
             {
               curve: lifetimeCurve,

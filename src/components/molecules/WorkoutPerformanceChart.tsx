@@ -320,7 +320,12 @@ export function WorkoutPerformanceChart({
           </ChartContainer>
 
           {/* Metric reference info */}
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          {/* Use 3 columns if no heart rate, 4 columns if heart rate present */}
+          <div className={`mt-4 grid gap-3 text-xs ${
+            metricInfo.find((m) => m.slug === "heart_rate")
+              ? "grid-cols-2 md:grid-cols-4"
+              : "grid-cols-2 md:grid-cols-3"
+          }`}>
             {metricInfo.map((metric) => {
               return (
                 <div

@@ -7,10 +7,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PowerCurve } from "../../lib/powerCurveUtils";
 import { formatDuration, getKeyDurations } from "../../lib/powerCurveUtils";
+import type { PowerEffort } from "../../hooks/queries/useAggregatePowerCurves";
 
 interface PowerCurveChartProps {
   /** Power curve data calculated from workout */
   powerCurve: PowerCurve;
+  /** Map of duration to top efforts (for showing PR badges) */
+  topEffortsMap?: Map<number, PowerEffort[]>;
+  /** Current workout ID (to determine which efforts belong to this workout) */
+  currentWorkoutId?: string;
 }
 
 interface CustomTooltipProps {
@@ -80,7 +85,63 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
  * <PowerCurveChart powerCurve={powerCurve} />
  * ```
  */
-export function PowerCurveChart({ powerCurve }: PowerCurveChartProps) {
+export function PowerCurveChart({ 
+  powerCurve, 
+  topEffortsMap,
+  currentWorkoutId 
+}: PowerCurveChartProps) {
+  // Helper function to get PR rank for a given duration
+  const getPRRank = (duration: number, power: number): number | null => {
+    if (!topEffortsMap || !currentWorkoutId) {
+      return null;
+    }
+
+    const efforts = topEffortsMap.get(duration);
+    if (!efforts || efforts.length === 0) {
+      return null;
+    }
+
+    // Find the rank of the current workout's effort
+    // Efforts are already sorted by power descending
+    const rank = efforts.findIndex(
+      (e) => e.workoutId === currentWorkoutId && Math.abs(e.power - power) < 0.1
+    );
+
+    return rank >= 0 ? rank + 1 : null; // Convert to 1-based rank
+  };
+
+  // Helper function to render PR badge based on rank
+  const renderPRBadge = (rank: number | null) => {
+    if (rank === null) return null;
+
+    if (rank === 1) {
+      return (
+        <span className="badge badge-sm badge-primary font-bold">
+          PR
+        </span>
+      );
+    } else if (rank <= 3) {
+      return (
+        <span className="badge badge-sm badge-accent">
+          Top {rank}
+        </span>
+      );
+    } else if (rank <= 5) {
+      return (
+        <span className="badge badge-sm badge-ghost">
+          Top {rank}
+        </span>
+      );
+    } else if (rank <= 10) {
+      return (
+        <span className="badge badge-sm badge-ghost text-xs">
+          #{rank}
+        </span>
+      );
+    }
+    return null;
+  };
+
   // Don't render if no data available
   if (powerCurve.points.length === 0) {
     return (
@@ -191,7 +252,12 @@ export function PowerCurveChart({ powerCurve }: PowerCurveChartProps) {
           {/* Key power benchmarks */}
           <div className="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
             {power5s !== undefined && (
-              <div className="flex flex-col p-2 rounded-md bg-muted/50">
+              <div className="flex flex-col p-2 rounded-md bg-muted/50 relative">
+                {renderPRBadge(getPRRank(5, power5s)) && (
+                  <div className="absolute -top-2 -right-2">
+                    {renderPRBadge(getPRRank(5, power5s))}
+                  </div>
+                )}
                 <span className="text-muted-foreground mb-0.5">5 sec</span>
                 <div className="flex items-baseline gap-1">
                   <span className="font-bold text-base">
@@ -202,7 +268,12 @@ export function PowerCurveChart({ powerCurve }: PowerCurveChartProps) {
               </div>
             )}
             {power1min !== undefined && (
-              <div className="flex flex-col p-2 rounded-md bg-muted/50">
+              <div className="flex flex-col p-2 rounded-md bg-muted/50 relative">
+                {renderPRBadge(getPRRank(60, power1min)) && (
+                  <div className="absolute -top-2 -right-2">
+                    {renderPRBadge(getPRRank(60, power1min))}
+                  </div>
+                )}
                 <span className="text-muted-foreground mb-0.5">1 min</span>
                 <div className="flex items-baseline gap-1">
                   <span className="font-bold text-base">
@@ -213,7 +284,12 @@ export function PowerCurveChart({ powerCurve }: PowerCurveChartProps) {
               </div>
             )}
             {power5min !== undefined && (
-              <div className="flex flex-col p-2 rounded-md bg-muted/50">
+              <div className="flex flex-col p-2 rounded-md bg-muted/50 relative">
+                {renderPRBadge(getPRRank(300, power5min)) && (
+                  <div className="absolute -top-2 -right-2">
+                    {renderPRBadge(getPRRank(300, power5min))}
+                  </div>
+                )}
                 <span className="text-muted-foreground mb-0.5">5 min</span>
                 <div className="flex items-baseline gap-1">
                   <span className="font-bold text-base">
@@ -224,7 +300,12 @@ export function PowerCurveChart({ powerCurve }: PowerCurveChartProps) {
               </div>
             )}
             {power20min !== undefined && (
-              <div className="flex flex-col p-2 rounded-md bg-muted/50">
+              <div className="flex flex-col p-2 rounded-md bg-muted/50 relative">
+                {renderPRBadge(getPRRank(1200, power20min)) && (
+                  <div className="absolute -top-2 -right-2">
+                    {renderPRBadge(getPRRank(1200, power20min))}
+                  </div>
+                )}
                 <span className="text-muted-foreground mb-0.5">20 min</span>
                 <div className="flex items-baseline gap-1">
                   <span className="font-bold text-base">

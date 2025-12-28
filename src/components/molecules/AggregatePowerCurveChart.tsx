@@ -103,7 +103,11 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
         {hasDelta && (
           <div className="pt-2 mt-2 border-t border-border">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-xs">Delta</span>
+              <div
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: "oklch(var(--wa))" }}
+              />
+              <span className="text-xs"> Delta </span>
               <div className="flex items-baseline gap-1">
                 <span
                   className={`font-bold text-sm ${
