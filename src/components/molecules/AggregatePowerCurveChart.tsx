@@ -376,6 +376,16 @@ export function AggregatePowerCurveChart({
     
     // Set domain to include negative deltas
     yAxisDomain = [Math.min(0, minDelta), maxPower];
+    
+    // Debug: Log delta data
+    console.log('Delta data present:', {
+      deltaCount: deltaData.deltas.length,
+      minDelta,
+      maxPower,
+      yAxisDomain,
+      sampleDelta: deltaData.deltas[0],
+      sampleChartData: chartData.find((d) => d.deltaPositive || d.deltaNegative),
+    });
   }
 
   const formatXAxisTick = (value: number) => formatDuration(value);
