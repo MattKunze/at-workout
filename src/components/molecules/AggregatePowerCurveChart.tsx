@@ -365,6 +365,19 @@ export function AggregatePowerCurveChart({
     keyDurations.push(maxDuration);
   }
 
+  // Calculate Y-axis domain when showing deltas
+  let yAxisDomain: [number | 'auto', number | 'auto'] = [0, 'auto'];
+  if (showDeltas && deltaData) {
+    // Find the minimum delta value to ensure Y-axis goes negative if needed
+    const minDelta = Math.min(...deltaData.deltas.map((d) => d.delta));
+    const maxPower = Math.max(...chartData.flatMap((d) => 
+      visibleValidCurves.map((c) => (d[c.label] as number) || 0)
+    ));
+    
+    // Set domain to include negative deltas
+    yAxisDomain = [Math.min(0, minDelta), maxPower];
+  }
+
   const formatXAxisTick = (value: number) => formatDuration(value);
 
   return (
@@ -457,7 +470,7 @@ export function AggregatePowerCurveChart({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              domain={showDeltas ? ['auto', 'auto'] : [0, 'auto']}
+              domain={yAxisDomain}
               label={{
                 value: "Power (watts)",
                 angle: -90,
