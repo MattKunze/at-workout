@@ -9,7 +9,15 @@
  */
 
 import { useState } from "react";
-import { Area, ComposedChart, CartesianGrid, XAxis, YAxis, ReferenceLine, Line } from "recharts";
+import {
+  ComposedChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  ReferenceLine,
+  Line,
+  Area,
+} from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -55,7 +63,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 
   const durationLabel = payload[0]?.payload.durationLabel as string;
   const data = payload[0]?.payload;
-  
+
   // Check if delta data is present
   const hasDelta = data.delta !== undefined && data.delta !== null;
   const delta = data.delta as number;
@@ -69,9 +77,12 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
           <span className="font-bold text-sm">{durationLabel}</span>
         </div>
         {payload
-          .filter((entry) => !entry.dataKey.startsWith('delta')) // Filter out delta series
+          .filter((entry) => !entry.dataKey.startsWith("delta")) // Filter out delta series
           .map((entry, index) => (
-            <div key={index} className="flex items-center justify-between gap-4">
+            <div
+              key={index}
+              className="flex items-center justify-between gap-4"
+            >
               <div className="flex items-center gap-2">
                 <div
                   className="h-2.5 w-2.5 rounded-full"
@@ -87,7 +98,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
               </div>
             </div>
           ))}
-        
+
         {/* Show delta information if present */}
         {hasDelta && (
           <div className="pt-2 mt-2 border-t border-border">
@@ -96,11 +107,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
               <div className="flex items-baseline gap-1">
                 <span
                   className={`font-bold text-sm ${
-                    delta > 0
-                      ? "text-success"
-                      : delta < 0
-                      ? "text-error"
-                      : ""
+                    delta > 0 ? "text-success" : delta < 0 ? "text-error" : ""
                   }`}
                 >
                   {delta > 0 ? "+" : ""}
@@ -112,8 +119,8 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
                     delta > 0
                       ? "text-success"
                       : delta < 0
-                      ? "text-error"
-                      : "text-muted-foreground"
+                        ? "text-error"
+                        : "text-muted-foreground"
                   }`}
                 >
                   ({delta > 0 ? "+" : ""}
@@ -252,8 +259,8 @@ export function AggregatePowerCurveChart({
   // Calculate deltas when exactly two curves are selected
   // Assume curves are ordered from older to newer, so compare [1] - [0]
   const showDeltas = visibleValidCurves.length === 2;
-  const deltaData = showDeltas 
-    ? calculateDeltas(visibleValidCurves[0], visibleValidCurves[1]) 
+  const deltaData = showDeltas
+    ? calculateDeltas(visibleValidCurves[0], visibleValidCurves[1])
     : null;
 
   // Don't render if no valid curves
@@ -324,8 +331,10 @@ export function AggregatePowerCurveChart({
       const deltaPoint = deltaData.deltas.find((d) => d.duration === duration);
       if (deltaPoint) {
         dataPoint.delta = deltaPoint.delta;
-        dataPoint.deltaPositive = deltaPoint.delta > 0 ? deltaPoint.delta : null;
-        dataPoint.deltaNegative = deltaPoint.delta < 0 ? deltaPoint.delta : null;
+        dataPoint.deltaPositive =
+          deltaPoint.delta > 0 ? deltaPoint.delta : null;
+        dataPoint.deltaNegative =
+          deltaPoint.delta < 0 ? deltaPoint.delta : null;
         dataPoint.baselinePower = deltaPoint.baselinePower;
         dataPoint.comparisonPower = deltaPoint.comparisonPower;
         dataPoint.percentChange = deltaPoint.percentChange;
@@ -346,6 +355,10 @@ export function AggregatePowerCurveChart({
 
   // Add delta configuration if showing deltas
   if (showDeltas && deltaData) {
+    chartConfig.delta = {
+      label: `Delta: ${deltaData.comparison.label} - ${deltaData.baseline.label}`,
+      color: "oklch(var(--in))",
+    };
     chartConfig.deltaPositive = {
       label: `${deltaData.comparison.label} - ${deltaData.baseline.label} (Gain)`,
       color: "oklch(var(--su))",
@@ -366,29 +379,22 @@ export function AggregatePowerCurveChart({
   }
 
   // Calculate Y-axis domain when showing deltas
-  let yAxisDomain: [number | 'auto', number | 'auto'] = [0, 'auto'];
+  let yAxisDomain: [number | "auto", number | "auto"] = [0, "auto"];
   if (showDeltas && deltaData) {
     // Find the minimum delta value to ensure Y-axis goes negative if needed
     const minDelta = Math.min(...deltaData.deltas.map((d) => d.delta));
-    const maxPower = Math.max(...chartData.flatMap((d) => 
-      visibleValidCurves.map((c) => (d[c.label] as number) || 0)
-    ));
-    
+    const maxPower = Math.max(
+      ...chartData.flatMap((d) =>
+        visibleValidCurves.map((c) => (d[c.label] as number) || 0)
+      )
+    );
+
     // Set domain to include negative deltas
     yAxisDomain = [Math.min(0, minDelta), maxPower];
-    
-    // Debug: Log delta data
-    console.log('Delta data present:', {
-      deltaCount: deltaData.deltas.length,
-      minDelta,
-      maxPower,
-      yAxisDomain,
-      sampleDelta: deltaData.deltas[0],
-      sampleChartData: chartData.find((d) => d.deltaPositive || d.deltaNegative),
-    });
   }
 
   const formatXAxisTick = (value: number) => formatDuration(value);
+  const formatYAxisTick = (value: number) => Math.round(value).toString();
 
   return (
     <Card>
@@ -481,6 +487,7 @@ export function AggregatePowerCurveChart({
               axisLine={false}
               tickMargin={8}
               domain={yAxisDomain}
+              tickFormatter={formatYAxisTick}
               label={{
                 value: "Power (watts)",
                 angle: -90,
@@ -503,113 +510,101 @@ export function AggregatePowerCurveChart({
               />
             ))}
 
-            {/* Render delta areas when comparing two curves */}
-            {showDeltas && (
-              <>
-                <ReferenceLine y={0} stroke="oklch(var(--bc)/0.2)" strokeWidth={1} strokeDasharray="3 3" />
-                {/* Try Line first to debug */}
-                <Line
-                  type="monotone"
-                  dataKey="delta"
-                  stroke="oklch(var(--in))"
-                  strokeWidth={3}
-                  dot={false}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="deltaPositive"
-                  stroke="oklch(var(--su))"
-                  fill="url(#fill-delta-positive)"
-                  strokeWidth={2}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="deltaNegative"
-                  stroke="oklch(var(--er))"
-                  fill="url(#fill-delta-negative)"
-                  strokeWidth={2}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                />
-              </>
-            )}
+            {/* Render delta line when comparing two curves */}
+            <ReferenceLine
+              y={0}
+              stroke="oklch(var(--bc)/0.2)"
+              strokeWidth={1}
+              strokeDasharray="3 3"
+            />
+            <Line
+              key="delta-line"
+              type="monotone"
+              dataKey="delta"
+              stroke="oklch(var(--wa))"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
           </ComposedChart>
         </ChartContainer>
 
         {/* Legend / Curve Info */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-          {curvesWithColors.map(({ curve, label: curveLabel, color }, idx) => {
-            const isVisible = visibleCurves.has(curveLabel);
+          {curvesWithColors
+            .reverse()
+            .map(({ curve, label: curveLabel, color }, idx) => {
+              const isVisible = visibleCurves.has(curveLabel);
 
-            // Get key benchmark powers
-            const power5s = curve.points.find((p) => p.duration === 5)?.power;
-            const power1min = curve.points.find(
-              (p) => p.duration === 60
-            )?.power;
-            const power5min = curve.points.find(
-              (p) => p.duration === 300
-            )?.power;
-            const power20min = curve.points.find(
-              (p) => p.duration === 1200
-            )?.power;
+              // Get key benchmark powers
+              const power5s = curve.points.find((p) => p.duration === 5)?.power;
+              const power1min = curve.points.find(
+                (p) => p.duration === 60
+              )?.power;
+              const power5min = curve.points.find(
+                (p) => p.duration === 300
+              )?.power;
+              const power20min = curve.points.find(
+                (p) => p.duration === 1200
+              )?.power;
 
-            return (
-              <button
-                key={idx}
-                onClick={() => toggleCurve(curveLabel)}
-                className={`flex flex-col p-3 rounded-md border-l-4 text-left transition-all hover:shadow-md ${
-                  isVisible
-                    ? "bg-muted/50 opacity-100"
-                    : "bg-muted/20 opacity-50"
-                }`}
-                style={{ borderColor: isVisible ? color : "transparent" }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div
-                    className="h-3 w-3 rounded-full transition-all"
-                    style={{
-                      backgroundColor: isVisible
-                        ? color
-                        : "oklch(var(--bc)/0.3)",
-                    }}
-                  />
-                  <span className="font-semibold">{curveLabel}</span>
-                </div>
-                <div className="ml-5 space-y-1 text-muted-foreground">
-                  {power5s !== undefined && (
-                    <div>
-                      5s:{" "}
-                      <span className="font-bold">{power5s.toFixed(0)}W</span>
-                    </div>
-                  )}
-                  {power1min !== undefined && (
-                    <div>
-                      1min:{" "}
-                      <span className="font-bold">{power1min.toFixed(0)}W</span>
-                    </div>
-                  )}
-                  {power5min !== undefined && (
-                    <div>
-                      5min:{" "}
-                      <span className="font-bold">{power5min.toFixed(0)}W</span>
-                    </div>
-                  )}
-                  {power20min !== undefined && (
-                    <div>
-                      20min:{" "}
-                      <span className="font-bold">
-                        {power20min.toFixed(0)}W
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={idx}
+                  onClick={() => toggleCurve(curveLabel)}
+                  className={`flex flex-col p-3 rounded-md border-l-4 text-left transition-all hover:shadow-md ${
+                    isVisible
+                      ? "bg-muted/50 opacity-100"
+                      : "bg-muted/20 opacity-50"
+                  }`}
+                  style={{ borderColor: isVisible ? color : "transparent" }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div
+                      className="h-3 w-3 rounded-full transition-all"
+                      style={{
+                        backgroundColor: isVisible
+                          ? color
+                          : "oklch(var(--bc)/0.3)",
+                      }}
+                    />
+                    <span className="font-semibold">{curveLabel}</span>
+                  </div>
+                  <div className="ml-5 space-y-1 text-muted-foreground">
+                    {power5s !== undefined && (
+                      <div>
+                        5s:{" "}
+                        <span className="font-bold">{power5s.toFixed(0)}W</span>
+                      </div>
+                    )}
+                    {power1min !== undefined && (
+                      <div>
+                        1min:{" "}
+                        <span className="font-bold">
+                          {power1min.toFixed(0)}W
+                        </span>
+                      </div>
+                    )}
+                    {power5min !== undefined && (
+                      <div>
+                        5min:{" "}
+                        <span className="font-bold">
+                          {power5min.toFixed(0)}W
+                        </span>
+                      </div>
+                    )}
+                    {power20min !== undefined && (
+                      <div>
+                        20min:{" "}
+                        <span className="font-bold">
+                          {power20min.toFixed(0)}W
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
         </div>
       </CardContent>
     </Card>
