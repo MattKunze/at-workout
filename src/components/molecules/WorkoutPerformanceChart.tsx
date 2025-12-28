@@ -320,7 +320,7 @@ export function WorkoutPerformanceChart({
           </ChartContainer>
 
           {/* Metric reference info */}
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
             {metricInfo.map((metric) => {
               return (
                 <div

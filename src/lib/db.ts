@@ -75,7 +75,7 @@ export interface AggregatePowerCurveCache {
   userId: string;
   
   /** Type of aggregation */
-  aggregateType: 'lifetime' | 'year' | 'month' | 'custom';
+  aggregateType: 'lifetime' | 'year' | 'month' | 'custom' | 'days';
   
   /** Time range for this aggregate */
   timeRange: {
@@ -202,6 +202,22 @@ export async function clearUserCache(userId: string): Promise<void> {
     await db.aggregateCurves.where('userId').equals(userId).delete();
     await db.backfillState.where('userId').equals(userId).delete();
   });
+}
+
+/**
+ * Clear only aggregate curve caches for a user
+ * Useful when aggregate calculation logic changes and needs regeneration
+ */
+export async function clearAggregateCurveCache(userId: string): Promise<void> {
+  await db.aggregateCurves.where('userId').equals(userId).delete();
+}
+
+/**
+ * Clear all aggregate curve caches for all users
+ * Use this when the aggregate calculation logic changes
+ */
+export async function clearAllAggregateCurves(): Promise<void> {
+  await db.aggregateCurves.clear();
 }
 
 /**

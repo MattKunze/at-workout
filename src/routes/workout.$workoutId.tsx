@@ -99,7 +99,9 @@ export default function WorkoutDetail() {
                           {summary.value.toFixed(0)}
                         </div>
                         {summary.display_unit && (
-                          <div className="stat-desc">{summary.display_unit}</div>
+                          <div className="stat-desc">
+                            {summary.display_unit}
+                          </div>
                         )}
                       </div>
                     ))}

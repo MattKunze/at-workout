@@ -25,6 +25,8 @@ export const aggregatePowerCurveKeys = {
   year: (userId: string, year: number) => [...aggregatePowerCurveKeys.all, 'year', userId, year] as const,
   month: (userId: string, year: number, month: number) => 
     [...aggregatePowerCurveKeys.all, 'month', userId, year, month] as const,
+  days: (userId: string, days: number) =>
+    [...aggregatePowerCurveKeys.all, 'days', userId, days] as const,
   availableYears: (userId: string) => [...aggregatePowerCurveKeys.all, 'availableYears', userId] as const,
   availableMonths: (userId: string, year: number) => 
     [...aggregatePowerCurveKeys.all, 'availableMonths', userId, year] as const,
@@ -113,6 +115,35 @@ export function useMonthlyPowerCurve(
       return await getAggregatePowerCurve(userId, 'month', { year, month });
     },
     enabled: options?.enabled !== false && !!userId && !!year && !!month,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
+  });
+}
+
+/**
+ * Hook to fetch power curve for the last N days
+ * 
+ * Shows the best power values achieved at each duration during the last N days.
+ * 
+ * @param days - Number of days to look back
+ * @param options - Query options
+ * @returns Query result with recent days power curve
+ */
+export function useRecentDaysPowerCurve(
+  days: number,
+  options?: { enabled?: boolean }
+) {
+  const userId = getCurrentUserId();
+  
+  return useQuery({
+    queryKey: aggregatePowerCurveKeys.days(userId || '', days),
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return await getAggregatePowerCurve(userId, 'days', { days });
+    },
+    enabled: options?.enabled !== false && !!userId && !!days,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes
   });

@@ -23,6 +23,9 @@ export { BASE_DURATIONS };
  * This creates a "best of" curve showing the highest sustained power
  * achieved at each duration across all provided curves.
  * 
+ * Only standard BASE_DURATIONS are included in the aggregate to avoid
+ * odd workout-specific durations that create artifacts in the visualization.
+ * 
  * @param curves - Array of power curves to combine
  * @returns Aggregate power curve with max values at each duration
  */
@@ -40,10 +43,16 @@ export function combinePowerCurves(curves: PowerCurve[]): PowerCurve {
   }
 
   // Build a map of duration -> max power across all curves
+  // Only include standard BASE_DURATIONS to avoid odd workout-specific durations
   const durationMaxMap = new Map<number, PowerCurvePoint>();
 
   for (const curve of curves) {
     for (const point of curve.points) {
+      // Only include points that are in BASE_DURATIONS
+      if (!BASE_DURATIONS.includes(point.duration)) {
+        continue;
+      }
+      
       const existing = durationMaxMap.get(point.duration);
       
       if (!existing || point.power > existing.power) {
@@ -125,10 +134,11 @@ export async function getPowerCurvesInRange(
  */
 export async function getAggregatePowerCurve(
   userId: string,
-  type: 'lifetime' | 'year' | 'month' | 'custom',
+  type: 'lifetime' | 'year' | 'month' | 'custom' | 'days',
   options?: {
     year?: number;
     month?: number; // 1-12
+    days?: number; // Number of days back from now
     timeRange?: TimeRangeFilter;
     forceRecalculate?: boolean;
   }
@@ -184,10 +194,11 @@ export async function getAggregatePowerCurve(
  */
 function generateAggregateCacheId(
   userId: string,
-  type: 'lifetime' | 'year' | 'month' | 'custom',
+  type: 'lifetime' | 'year' | 'month' | 'custom' | 'days',
   options?: {
     year?: number;
     month?: number;
+    days?: number;
     timeRange?: TimeRangeFilter;
   }
 ): string {
@@ -204,6 +215,14 @@ function generateAggregateCacheId(
       return `${userId}-${year}-${String(month).padStart(2, '0')}`;
     }
     
+    case 'days': {
+      const days = options?.days || 30;
+      // Use current date (rounded to start of day) for cache stability
+      const now = new Date();
+      const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      return `${userId}-last${days}days-${dateKey}`;
+    }
+    
     case 'custom': {
       const start = options?.timeRange?.start || 0;
       const end = options?.timeRange?.end || Date.now();
@@ -216,10 +235,11 @@ function generateAggregateCacheId(
  * Convert aggregate type and options to a time range filter
  */
 function getTimeRangeForAggregate(
-  type: 'lifetime' | 'year' | 'month' | 'custom',
+  type: 'lifetime' | 'year' | 'month' | 'custom' | 'days',
   options?: {
     year?: number;
     month?: number;
+    days?: number;
     timeRange?: TimeRangeFilter;
   }
 ): TimeRangeFilter {
@@ -241,6 +261,13 @@ function getTimeRangeForAggregate(
       const start = new Date(year, month, 1).getTime();
       const end = new Date(year, month + 1, 1).getTime();
       return { start, end };
+    }
+    
+    case 'days': {
+      const days = options?.days || 30;
+      const now = Date.now();
+      const start = now - (days * 24 * 60 * 60 * 1000);
+      return { start, end: now };
     }
     
     case 'custom':
@@ -470,4 +497,19 @@ export async function getTopEffortsForDurations(
   }
 
   return effortsByDuration;
+}
+
+/**
+ * Get power curve for the last N days
+ * Convenience wrapper around getAggregatePowerCurve
+ * 
+ * @param userId - Peloton user ID
+ * @param days - Number of days to look back
+ * @returns Power curve for the specified time period
+ */
+export async function getRecentDaysPowerCurve(
+  userId: string,
+  days: number
+): Promise<PowerCurve> {
+  return await getAggregatePowerCurve(userId, 'days', { days });
 }
