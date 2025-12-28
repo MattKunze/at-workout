@@ -12,6 +12,8 @@ import {
   getAggregatePowerCurve,
   getAvailableYears,
   getAvailableMonthsForYear,
+  getTopEffortsForDurations,
+  type PowerEffort,
 } from '../../lib/aggregatePowerCurves';
 
 /**
@@ -26,6 +28,8 @@ export const aggregatePowerCurveKeys = {
   availableYears: (userId: string) => [...aggregatePowerCurveKeys.all, 'availableYears', userId] as const,
   availableMonths: (userId: string, year: number) => 
     [...aggregatePowerCurveKeys.all, 'availableMonths', userId, year] as const,
+  topEfforts: (userId: string, durations: number[]) =>
+    [...aggregatePowerCurveKeys.all, 'topEfforts', userId, ...durations] as const,
 };
 
 /**
@@ -318,3 +322,38 @@ export function useComparePowerCurves(
     errors: queries.map(r => r.error),
   };
 }
+
+/**
+ * Hook to fetch top N power efforts for specific durations
+ * 
+ * Returns the best efforts across all workouts for key durations
+ * (e.g., 5s, 1min, 5min, 20min) with workout context for linking.
+ * 
+ * @param durations - Array of durations in seconds to fetch top efforts for
+ * @param limit - Number of top efforts per duration (default: 3)
+ * @param options - Query options
+ * @returns Query result with map of duration to top efforts
+ */
+export function useTopEfforts(
+  durations: number[],
+  limit: number = 3,
+  options?: { enabled?: boolean }
+) {
+  const userId = getCurrentUserId();
+
+  return useQuery({
+    queryKey: aggregatePowerCurveKeys.topEfforts(userId || '', durations),
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return await getTopEffortsForDurations(userId, durations, limit);
+    },
+    enabled: options?.enabled !== false && !!userId && durations.length > 0,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
+  });
+}
+
+// Re-export PowerEffort type for convenience
+export type { PowerEffort };

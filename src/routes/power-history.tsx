@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
 import { AggregatePowerCurveChart } from '../components/molecules/AggregatePowerCurveChart';
 import {
   useLifetimePowerCurve,
@@ -13,6 +14,7 @@ import {
   useMonthlyPowerCurve,
   useAvailableYears,
   useAvailableMonths,
+  useTopEfforts,
 } from '../hooks/queries/useAggregatePowerCurves';
 import { getCacheStats, getCurrentUserId } from '../lib/db';
 
@@ -54,6 +56,10 @@ export default function PowerHistory() {
     selectedYear,
     selectedMonth
   );
+
+  // Fetch top efforts for PR durations
+  const prDurations = [5, 60, 300, 1200];
+  const { data: topEffortsMap } = useTopEfforts(prDurations, 3);
 
   if (!userId) {
     return (
@@ -277,7 +283,7 @@ export default function PowerHistory() {
       {lifetimeCurve && lifetimeCurve.points.length > 0 && (
         <div>
           <h2 className="text-2xl font-bold mb-4">Personal Records</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { duration: 5, label: '5 Second' },
               { duration: 60, label: '1 Minute' },
@@ -285,11 +291,31 @@ export default function PowerHistory() {
               { duration: 1200, label: '20 Minute' },
             ].map(({ duration, label }) => {
               const power = lifetimeCurve.points.find(p => p.duration === duration)?.power;
+              const topEfforts = topEffortsMap?.get(duration) || [];
+              
               return power ? (
                 <div key={duration} className="card bg-base-200">
                   <div className="card-body p-4">
                     <h3 className="text-sm text-muted-foreground">{label} PR</h3>
-                    <p className="text-3xl font-bold">{power.toFixed(0)}<span className="text-lg text-muted-foreground ml-1">W</span></p>
+                    <p className="text-3xl font-bold">
+                      {power.toFixed(0)}
+                      <span className="text-lg text-muted-foreground ml-1">W</span>
+                    </p>
+                    
+                    {topEfforts.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <p className="text-xs text-muted-foreground font-semibold uppercase">Top Efforts</p>
+                        {topEfforts.map((effort, idx) => (
+                          <Link
+                            key={`${effort.workoutId}-${idx}`}
+                            to={`/workout/${effort.workoutId}`}
+                            className="block text-sm hover:text-primary transition-colors"
+                          >
+                            {effort.power.toFixed(0)}W @ {new Date(effort.workoutDate).toLocaleDateString()}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : null;

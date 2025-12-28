@@ -355,3 +355,119 @@ export async function getAvailableMonthsForYear(
 
   return Array.from(months).sort((a, b) => b - a); // Descending
 }
+
+/**
+ * Represents a single power effort with workout context
+ */
+export interface PowerEffort {
+  /** Duration in seconds */
+  duration: number;
+  /** Power output in watts */
+  power: number;
+  /** Workout ID where this effort occurred */
+  workoutId: string;
+  /** Date of the workout (Unix timestamp) */
+  workoutDate: number;
+}
+
+/**
+ * Get top N power efforts for a specific duration
+ * 
+ * @param userId - Peloton user ID
+ * @param duration - Duration in seconds (e.g., 5, 60, 300, 1200)
+ * @param limit - Number of top efforts to return (default: 3)
+ * @param timeRange - Optional time range filter
+ * @returns Array of top power efforts sorted by power (descending)
+ */
+export async function getTopEffortsForDuration(
+  userId: string,
+  duration: number,
+  limit: number = 3,
+  timeRange?: TimeRangeFilter
+): Promise<PowerEffort[]> {
+  // Get all power curves for the user
+  const curveCaches = await getPowerCurvesInRange(userId, timeRange);
+  
+  if (curveCaches.length === 0) {
+    return [];
+  }
+
+  // Extract efforts for the specified duration from each workout
+  const efforts: PowerEffort[] = [];
+  
+  for (const cache of curveCaches) {
+    // Find the point for this duration in the workout's power curve
+    const point = cache.curve.points.find(p => p.duration === duration);
+    
+    if (point && point.power > 0) {
+      efforts.push({
+        duration,
+        power: point.power,
+        workoutId: cache.workoutId,
+        workoutDate: cache.metadata.workoutDate,
+      });
+    }
+  }
+
+  // Sort by power descending and take top N
+  efforts.sort((a, b) => b.power - a.power);
+  
+  return efforts.slice(0, limit);
+}
+
+/**
+ * Get top N efforts for multiple durations at once
+ * More efficient than calling getTopEffortsForDuration multiple times
+ * 
+ * @param userId - Peloton user ID
+ * @param durations - Array of durations in seconds
+ * @param limit - Number of top efforts per duration (default: 3)
+ * @param timeRange - Optional time range filter
+ * @returns Map of duration to array of top efforts
+ */
+export async function getTopEffortsForDurations(
+  userId: string,
+  durations: number[],
+  limit: number = 3,
+  timeRange?: TimeRangeFilter
+): Promise<Map<number, PowerEffort[]>> {
+  // Get all power curves for the user once
+  const curveCaches = await getPowerCurvesInRange(userId, timeRange);
+  
+  if (curveCaches.length === 0) {
+    return new Map();
+  }
+
+  // Build a map of duration -> array of efforts
+  const effortsByDuration = new Map<number, PowerEffort[]>();
+  
+  // Initialize empty arrays for each duration
+  for (const duration of durations) {
+    effortsByDuration.set(duration, []);
+  }
+
+  // Extract efforts from each workout
+  for (const cache of curveCaches) {
+    for (const duration of durations) {
+      const point = cache.curve.points.find(p => p.duration === duration);
+      
+      if (point && point.power > 0) {
+        const efforts = effortsByDuration.get(duration)!;
+        efforts.push({
+          duration,
+          power: point.power,
+          workoutId: cache.workoutId,
+          workoutDate: cache.metadata.workoutDate,
+        });
+      }
+    }
+  }
+
+  // Sort and limit each duration's efforts
+  for (const [duration, efforts] of effortsByDuration.entries()) {
+    efforts.sort((a, b) => b.power - a.power);
+    effortsByDuration.set(duration, efforts.slice(0, limit));
+  }
+
+  return effortsByDuration;
+}
