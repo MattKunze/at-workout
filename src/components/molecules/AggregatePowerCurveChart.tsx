@@ -9,7 +9,7 @@
  */
 
 import { useState } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from "recharts";
+import { Area, ComposedChart, CartesianGrid, XAxis, YAxis, ReferenceLine, Line } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -400,7 +400,7 @@ export function AggregatePowerCurveChart({
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[400px] w-full">
-          <AreaChart
+          <ComposedChart
             data={chartData}
             margin={{ top: 5, right: 10, left: 10, bottom: 25 }}
           >
@@ -507,6 +507,16 @@ export function AggregatePowerCurveChart({
             {showDeltas && (
               <>
                 <ReferenceLine y={0} stroke="oklch(var(--bc)/0.2)" strokeWidth={1} strokeDasharray="3 3" />
+                {/* Try Line first to debug */}
+                <Line
+                  type="monotone"
+                  dataKey="delta"
+                  stroke="oklch(var(--in))"
+                  strokeWidth={3}
+                  dot={false}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
                 <Area
                   type="monotone"
                   dataKey="deltaPositive"
@@ -527,7 +537,7 @@ export function AggregatePowerCurveChart({
                 />
               </>
             )}
-          </AreaChart>
+          </ComposedChart>
         </ChartContainer>
 
         {/* Legend / Curve Info */}
