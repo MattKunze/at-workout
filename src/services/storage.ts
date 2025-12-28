@@ -60,3 +60,24 @@ export function listConnections(): string[] {
     return [];
   }
 }
+
+export function clearAllConnections(): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const keys: string[] = [];
+    
+    // Collect all connection keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(STORAGE_PREFIX)) {
+        keys.push(key);
+      }
+    }
+    
+    // Remove them all
+    keys.forEach(key => localStorage.removeItem(key));
+  } catch (error) {
+    console.error('Failed to clear all connections:', error);
+  }
+}

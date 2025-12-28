@@ -205,6 +205,31 @@ export async function clearUserCache(userId: string): Promise<void> {
 }
 
 /**
+ * Clear all database data (all users)
+ * Useful for logout to ensure no data persists
+ */
+export async function clearAllData(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  
+  await db.transaction('rw', [
+    db.workoutPerformance,
+    db.powerCurves,
+    db.aggregateCurves,
+    db.backfillState,
+  ], async () => {
+    await db.workoutPerformance.clear();
+    await db.powerCurves.clear();
+    await db.aggregateCurves.clear();
+    await db.backfillState.clear();
+  });
+  
+  // Also clear the current user ID
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('peloton_user_id');
+  }
+}
+
+/**
  * Clear only aggregate curve caches for a user
  * Useful when aggregate calculation logic changes and needs regeneration
  */

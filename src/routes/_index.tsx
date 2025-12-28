@@ -8,7 +8,7 @@ import { usePelotonWorkouts } from "../hooks/queries/usePelotonWorkouts";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { refreshSession } = useAuth();
+  const { session, refreshSession, signIn } = useAuth();
   const processed = useRef(false);
   const [isFinished, setIsFinished] = useState(false);
 
@@ -60,7 +60,74 @@ export default function Dashboard() {
     );
   }
 
+  // If not logged in, show login form
+  if (!session) {
+    return <LoginForm signIn={signIn} />;
+  }
+
   return <PelotonWorkoutsSection />;
+}
+
+/**
+ * Login form component for landing page
+ */
+function LoginForm({ signIn }: { signIn: (handle: string) => Promise<void> }) {
+  const [handle, setHandle] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await signIn(handle);
+    } catch {
+      setError("Failed to sign in. Please check your handle.");
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[70vh]">
+      <div className="card w-96 bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h2 className="card-title justify-center">Sign in with Bluesky</h2>
+          <form onSubmit={handleSubmit} className="form-control gap-4 mt-4">
+            <div>
+              <label className="label">
+                <span className="label-text">User Handle</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. alice.bsky.social"
+                className="input input-bordered w-full"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+            {error && <p className="text-error text-sm">{error}</p>}
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Redirecting...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -107,9 +174,25 @@ function PelotonWorkoutsSection() {
     enabled: isPelotonConnected && !!profile?.id,
   });
 
-  // Don't show anything if not connected
+  // Show message if not connected
   if (!isPelotonConnected) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="card w-96 bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title justify-center">Connect Peloton</h2>
+            <p className="text-center text-base-content/70 mt-2">
+              You haven't connected your Peloton account yet. Connect it to view your workout history and power curves.
+            </p>
+            <div className="card-actions justify-center mt-4">
+              <Link to="/preferences" className="btn btn-primary">
+                Go to Preferences
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Format date helper

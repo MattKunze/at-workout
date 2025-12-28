@@ -4,6 +4,8 @@ import { getCurrentSession, signIn as authSignIn, signOut as authSignOut } from 
 import { Client } from '@atcute/client';
 import { type UserProfile } from '../types/auth';
 import { AuthContext } from './AuthContext';
+import { clearAllData } from '../lib/db';
+import { clearAllConnections } from '../services/storage';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | undefined>(undefined);
@@ -62,9 +64,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await authSignOut();
-    setSession(undefined);
-    setUserProfile(undefined);
+    try {
+      // Clear all cached data
+      await clearAllData(); // Clear IndexedDB
+      clearAllConnections(); // Clear connection tokens from localStorage
+      
+      // Sign out from auth
+      await authSignOut();
+      
+      // Clear local state
+      setSession(undefined);
+      setUserProfile(undefined);
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      // Still clear local state even if clearing cache fails
+      setSession(undefined);
+      setUserProfile(undefined);
+    }
   };
 
   return (
