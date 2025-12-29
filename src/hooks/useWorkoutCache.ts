@@ -114,14 +114,32 @@ export function useWorkoutCache(
           const workoutsQueries = queryCache.findAll({
             predicate: (query) => {
               const key = query.queryKey;
-              return Array.isArray(key) && key[0] === 'peloton' && key[1] === 'workouts';
+              // Match both 'workouts' (paginated) and 'workouts-infinite' queries
+              return Array.isArray(key) && key[0] === 'peloton' && 
+                     (key[1] === 'workouts' || key[1] === 'workouts-infinite');
             },
           });
           
           let workout: PelotonWorkout | null = null;
           for (const query of workoutsQueries) {
-            const data = query.state.data as PelotonWorkoutsResponse | undefined;
-            if (data?.data) {
+            // Handle both paginated response and infinite query response
+            const data = query.state.data as PelotonWorkoutsResponse | { pages?: PelotonWorkoutsResponse[] } | undefined;
+            
+            // Check if this is an infinite query (has pages array)
+            if (data && 'pages' in data && Array.isArray(data.pages)) {
+              // Search through all pages
+              for (const page of data.pages) {
+                if (page?.data) {
+                  const found = page.data.find((w) => w.id === workoutId);
+                  if (found) {
+                    workout = found;
+                    break;
+                  }
+                }
+              }
+              if (workout) break;
+            } else if (data && 'data' in data && Array.isArray(data.data)) {
+              // Handle paginated response
               const found = data.data.find((w) => w.id === workoutId);
               if (found) {
                 workout = found;

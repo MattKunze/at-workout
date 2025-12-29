@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router";
+import { useParams } from "react-router";
 import { useMemo } from "react";
 import { useWorkoutPerformance } from "../hooks/queries/useWorkoutPerformance";
 import { useWorkoutDetails } from "../hooks/queries/useWorkoutDetails";
@@ -55,13 +55,6 @@ export default function WorkoutDetail() {
 
   return (
     <div>
-      {/* Back Navigation */}
-      <div className="mb-4">
-        <Link to="/" className="btn btn-ghost btn-sm">
-          ← Back to Dashboard
-        </Link>
-      </div>
-
       {/* Loading State */}
       {(isLoading || isLoadingDetails) && (
         <div className="flex items-center gap-2 p-4">
@@ -85,31 +78,42 @@ export default function WorkoutDetail() {
               performanceData.summaries.length > 0)) && (
             <div className="card bg-base-200 shadow-sm">
               <div className="card-body">
-                {/* Ride Title */}
-                {workoutDetails?.ride?.title && (
-                  <div className="mb-4">
-                    <h2 className="text-xl font-semibold">
-                      {workoutDetails.ride.title}
-                      {workoutDetails.ride.instructor?.name && (
-                        <span className="text-base font-normal text-base-content/70 ml-2">
-                          with {workoutDetails.ride.instructor.name}
-                        </span>
+                <div className="flex flex-row gap-4 items-center items-center mb-4">
+                  {workoutDetails?.ride?.image_url && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={workoutDetails.ride.image_url}
+                        alt={workoutDetails.ride.title || "Workout"}
+                        className="w-16 h-16 rounded object-cover"
+                      />
+                    </div>
+                  )}
+                  {/* Ride Title */}
+                  {workoutDetails?.ride?.title && (
+                    <div>
+                      <h2 className="text-xl font-semibold">
+                        {workoutDetails.ride.title}
+                        {workoutDetails.ride.instructor?.name && (
+                          <span className="text-base font-normal text-base-content/70 ml-2">
+                            with {workoutDetails.ride.instructor.name}
+                          </span>
+                        )}
+                      </h2>
+                      {workoutDetails.created_at && (
+                        <p className="text-sm text-base-content/60 mt-1">
+                          {new Date(
+                            workoutDetails.created_at * 1000
+                          ).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
                       )}
-                    </h2>
-                    {workoutDetails.created_at && (
-                      <p className="text-sm text-base-content/60 mt-1">
-                        {new Date(
-                          workoutDetails.created_at * 1000
-                        ).toLocaleDateString("en-US", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {/* Duration Stat */}
                   {performanceData.duration !== undefined && (
