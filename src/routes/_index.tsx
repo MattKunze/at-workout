@@ -8,7 +8,14 @@ import { InfiniteWorkoutList } from "../components/organisms/InfiniteWorkoutList
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { session, refreshSession, signIn } = useAuth();
+  const { session, loading, refreshSession, signIn } = useAuth();
+  const { loading: connectionsLoading, isConnected } = useConnections();
+  const isPelotonConnected = isConnected("peloton");
+  
+  // Fetch profile to get user ID (only if logged in and connected)
+  const { data: profile, isLoading: isLoadingProfile } =
+    usePelotonProfile(!!session && isPelotonConnected);
+  
   const processed = useRef(false);
   const [isFinished, setIsFinished] = useState(false);
 
@@ -60,12 +67,22 @@ export default function Dashboard() {
     );
   }
 
+  // Show loading state while checking for existing session
+  if (loading || connectionsLoading || (session && isPelotonConnected && isLoadingProfile)) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <span className="loading loading-spinner loading-lg"></span>
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
+  }
+
   // If not logged in, show login form
   if (!session) {
     return <LoginForm signIn={signIn} />;
   }
 
-  return <PelotonWorkoutsSection />;
+  return <PelotonWorkoutsSection profile={profile} isPelotonConnected={isPelotonConnected} />;
 }
 
 /**
@@ -133,24 +150,13 @@ function LoginForm({ signIn }: { signIn: (handle: string) => Promise<void> }) {
 /**
  * Component to display Peloton workouts if user is connected
  */
-function PelotonWorkoutsSection() {
-  const { isConnected } = useConnections();
-  const isPelotonConnected = isConnected("peloton");
-
-  // Fetch profile to get user ID
-  const { data: profile, isLoading: isLoadingProfile } =
-    usePelotonProfile(isPelotonConnected);
-
-  // Loading state
-  if (isLoadingProfile) {
-    return (
-      <div className="flex items-center gap-2 p-4">
-        <span className="loading loading-spinner loading-sm"></span>
-        <span className="text-base-content/70">Loading profile...</span>
-      </div>
-    );
-  }
-
+function PelotonWorkoutsSection({ 
+  profile, 
+  isPelotonConnected 
+}: { 
+  profile: ReturnType<typeof usePelotonProfile>['data']; 
+  isPelotonConnected: boolean;
+}) {
   // If no profile, user isn't connected
   if (!profile?.id) {
     return (

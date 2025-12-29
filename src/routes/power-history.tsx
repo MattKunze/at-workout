@@ -14,9 +14,18 @@ import {
   useTopEfforts,
 } from "../hooks/queries/useAggregatePowerCurves";
 import { getCacheStats, getCurrentUserId } from "../lib/db";
+import { useConnections } from "../contexts/ConnectionsContext";
+import { usePelotonProfile } from "../hooks/queries/usePelotonProfile";
 
 export default function PowerHistory() {
-  const userId = getCurrentUserId();
+  const { loading: connectionsLoading, isConnected } = useConnections();
+  const isPelotonConnected = isConnected("peloton");
+  
+  // Fetch profile to get user ID (only if connected)
+  const { data: profile, isLoading: isLoadingProfile } =
+    usePelotonProfile(isPelotonConnected);
+  
+  const userId = profile?.id || getCurrentUserId();
 
   const [cacheStats, setCacheStats] = useState<{
     workoutCount: number;
@@ -46,6 +55,16 @@ export default function PowerHistory() {
   // Fetch top efforts for PR durations
   const prDurations = [5, 60, 300, 1200];
   const { data: topEffortsMap } = useTopEfforts(prDurations, 3);
+
+  // Show loading state while checking connections or fetching profile
+  if (connectionsLoading || (isPelotonConnected && isLoadingProfile)) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <span className="loading loading-spinner loading-lg"></span>
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
+  }
 
   if (!userId) {
     return (
