@@ -41,6 +41,7 @@ export interface MetricNormalizationInfo {
   min: number;
   max: number;
   avgOriginal: number;
+  avgCyclingOnly: number;
 }
 
 /**
@@ -124,6 +125,36 @@ export function normalizeChartData(
     const max = Math.max(...values);
     const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
     
+    // Calculate cycling-only average (excluding warmup and cooldown)
+    const cyclingOnlyValues: number[] = [];
+    metric.values.forEach((value, index) => {
+      if (value === undefined || value === null) return;
+      
+      const timeInSeconds = performanceData.seconds_since_pedaling_start?.[index];
+      if (timeInSeconds === undefined) return;
+      
+      // Check if this point is in warmup or cooldown
+      let isWarmUpOrCoolDown = false;
+      segments.forEach(segment => {
+        const segmentStart = segment.start_time_offset;
+        const segmentEnd = segment.start_time_offset + segment.length;
+        
+        if (timeInSeconds >= segmentStart && timeInSeconds <= segmentEnd) {
+          if (segment.name === 'Warm Up' || segment.name === 'Cool Down') {
+            isWarmUpOrCoolDown = true;
+          }
+        }
+      });
+      
+      if (!isWarmUpOrCoolDown) {
+        cyclingOnlyValues.push(value);
+      }
+    });
+    
+    const avgCyclingOnly = cyclingOnlyValues.length > 0
+      ? cyclingOnlyValues.reduce((sum, v) => sum + v, 0) / cyclingOnlyValues.length
+      : avg; // Fallback to overall average if no cycling-only data
+    
     return {
       slug: metric.slug,
       displayName: metric.display_name,
@@ -131,6 +162,7 @@ export function normalizeChartData(
       min,
       max,
       avgOriginal: avg,
+      avgCyclingOnly,
     };
   });
   

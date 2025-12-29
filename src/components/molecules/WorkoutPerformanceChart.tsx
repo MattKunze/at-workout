@@ -347,6 +347,9 @@ export function WorkoutPerformanceChart({
                       Avg: {metric.avgOriginal.toFixed(1)} {metric.unit}
                     </div>
                     <div>
+                      Cycling: {metric.avgCyclingOnly.toFixed(1)} {metric.unit}
+                    </div>
+                    <div>
                       Range: {metric.min.toFixed(0)}-{metric.max.toFixed(0)}
                     </div>
                   </div>
