@@ -30,8 +30,8 @@ export const aggregatePowerCurveKeys = {
   availableYears: (userId: string) => [...aggregatePowerCurveKeys.all, 'availableYears', userId] as const,
   availableMonths: (userId: string, year: number) => 
     [...aggregatePowerCurveKeys.all, 'availableMonths', userId, year] as const,
-  topEfforts: (userId: string, durations: number[]) =>
-    [...aggregatePowerCurveKeys.all, 'topEfforts', userId, ...durations] as const,
+  topEfforts: (userId: string, durations: number[], limit: number) =>
+    [...aggregatePowerCurveKeys.all, 'topEfforts', userId, limit, ...durations] as const,
 };
 
 /**
@@ -373,7 +373,7 @@ export function useTopEfforts(
   const userId = getCurrentUserId();
 
   return useQuery({
-    queryKey: aggregatePowerCurveKeys.topEfforts(userId || '', durations),
+    queryKey: aggregatePowerCurveKeys.topEfforts(userId || '', durations, limit),
     queryFn: async () => {
       if (!userId) {
         throw new Error('User ID is required');
