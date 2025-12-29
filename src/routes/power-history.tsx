@@ -127,7 +127,7 @@ export default function PowerHistory() {
           title="Power Curve Analysis"
           description={
             cacheStats
-              ? `Analyzing ${cacheStats.powerCurveCount} workout ${cacheStats.powerCurveCount !== 1 ? "s" : ""}`
+              ? `Analyzing ${cacheStats.powerCurveCount} workout${cacheStats.powerCurveCount !== 1 ? "s" : ""}`
               : ""
           }
           curves={[
