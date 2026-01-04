@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ComposedChart, Area, Line, CartesianGrid, XAxis } from "recharts";
 import type { PelotonWorkoutPerformance } from "../../types/peloton";
 import {
@@ -114,6 +115,25 @@ export function WorkoutPerformanceChart({
     chartData,
     performanceData
   );
+
+  // State to track which metrics are visible
+  const [visibleMetrics, setVisibleMetrics] = useState<Set<string>>(() => {
+    // Initialize with all metrics visible
+    return new Set(metricInfo.map((m) => m.slug));
+  });
+
+  // Toggle metric visibility
+  const toggleMetric = (slug: string) => {
+    setVisibleMetrics((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) {
+        next.delete(slug);
+      } else {
+        next.add(slug);
+      }
+      return next;
+    });
+  };
 
   // Don't render if no data available
   if (normalizedData.length === 0 || metricInfo.length === 0) {
@@ -261,99 +281,119 @@ export function WorkoutPerformanceChart({
               />
 
               {/* Render resistance as area (background layer) */}
-              {metricInfo.find((m) => m.slug === "resistance") && (
-                <Area
-                  type="monotone"
-                  dataKey="resistance"
-                  stroke="oklch(var(--in))"
-                  fill="url(#fillResistance)"
-                  strokeWidth={2}
-                  name={
-                    metricInfo.find((m) => m.slug === "resistance")?.displayName
-                  }
-                  isAnimationActive={false}
-                />
-              )}
+              {metricInfo.find((m) => m.slug === "resistance") &&
+                visibleMetrics.has("resistance") && (
+                  <Area
+                    type="monotone"
+                    dataKey="resistance"
+                    stroke="oklch(var(--in))"
+                    fill="url(#fillResistance)"
+                    strokeWidth={2}
+                    name={
+                      metricInfo.find((m) => m.slug === "resistance")
+                        ?.displayName
+                    }
+                    isAnimationActive={false}
+                  />
+                )}
 
               {/* Render other metrics as lines (foreground layers) */}
               {/* Order: cadence (back), output (middle), heart_rate (front) */}
-              {metricInfo.find((m) => m.slug === "cadence") && (
-                <Line
-                  type="monotone"
-                  dataKey="cadence"
-                  stroke={metricColorMap["cadence"]}
-                  strokeWidth={2}
-                  dot={false}
-                  name={
-                    metricInfo.find((m) => m.slug === "cadence")?.displayName
-                  }
-                  isAnimationActive={false}
-                />
-              )}
-              {metricInfo.find((m) => m.slug === "output") && (
-                <Line
-                  type="monotone"
-                  dataKey="output"
-                  stroke={metricColorMap["output"]}
-                  strokeWidth={2}
-                  dot={false}
-                  name={
-                    metricInfo.find((m) => m.slug === "output")?.displayName
-                  }
-                  isAnimationActive={false}
-                />
-              )}
-              {metricInfo.find((m) => m.slug === "heart_rate") && (
-                <Line
-                  type="monotone"
-                  dataKey="heart_rate"
-                  stroke={metricColorMap["heart_rate"]}
-                  strokeWidth={2}
-                  dot={false}
-                  name={
-                    metricInfo.find((m) => m.slug === "heart_rate")?.displayName
-                  }
-                  isAnimationActive={false}
-                />
-              )}
+              {metricInfo.find((m) => m.slug === "cadence") &&
+                visibleMetrics.has("cadence") && (
+                  <Line
+                    type="monotone"
+                    dataKey="cadence"
+                    stroke={metricColorMap["cadence"]}
+                    strokeWidth={2}
+                    dot={false}
+                    name={
+                      metricInfo.find((m) => m.slug === "cadence")?.displayName
+                    }
+                    isAnimationActive={false}
+                  />
+                )}
+              {metricInfo.find((m) => m.slug === "output") &&
+                visibleMetrics.has("output") && (
+                  <Line
+                    type="monotone"
+                    dataKey="output"
+                    stroke={metricColorMap["output"]}
+                    strokeWidth={2}
+                    dot={false}
+                    name={
+                      metricInfo.find((m) => m.slug === "output")?.displayName
+                    }
+                    isAnimationActive={false}
+                  />
+                )}
+              {metricInfo.find((m) => m.slug === "heart_rate") &&
+                visibleMetrics.has("heart_rate") && (
+                  <Line
+                    type="monotone"
+                    dataKey="heart_rate"
+                    stroke={metricColorMap["heart_rate"]}
+                    strokeWidth={2}
+                    dot={false}
+                    name={
+                      metricInfo.find((m) => m.slug === "heart_rate")
+                        ?.displayName
+                    }
+                    isAnimationActive={false}
+                  />
+                )}
             </ComposedChart>
           </ChartContainer>
 
           {/* Metric reference info */}
           {/* Use 3 columns if no heart rate, 4 columns if heart rate present */}
-          <div className={`mt-4 grid gap-3 text-xs ${
-            metricInfo.find((m) => m.slug === "heart_rate")
-              ? "grid-cols-2 md:grid-cols-4"
-              : "grid-cols-2 md:grid-cols-3"
-          }`}>
+          <div
+            className={`mt-4 grid gap-3 text-xs ${
+              metricInfo.find((m) => m.slug === "heart_rate")
+                ? "grid-cols-2 md:grid-cols-4"
+                : "grid-cols-2 md:grid-cols-3"
+            }`}
+          >
             {metricInfo.map((metric) => {
+              const isVisible = visibleMetrics.has(metric.slug);
               return (
-                <div
+                <button
                   key={metric.slug}
-                  className="flex flex-col p-2 rounded-md bg-muted/50"
+                  onClick={() => toggleMetric(metric.slug)}
+                  className={`flex flex-col p-3 rounded-md border-l-4 text-left transition-all hover:shadow-md ${
+                    isVisible
+                      ? "bg-muted/50 opacity-100"
+                      : "bg-muted/20 opacity-50"
+                  }`}
+                  style={{
+                    borderColor: isVisible
+                      ? metricColorMap[metric.slug] || "oklch(var(--p))"
+                      : "transparent",
+                  }}
                 >
-                  <div className="flex items-center gap-1.5 mb-1">
+                  <div className="flex items-center gap-2 mb-2">
                     <div
-                      className="h-2 w-2 rounded-full"
+                      className="h-3 w-3 rounded-full transition-all"
                       style={{
-                        backgroundColor:
-                          metricColorMap[metric.slug] || "oklch(var(--p))",
+                        backgroundColor: isVisible
+                          ? metricColorMap[metric.slug] || "oklch(var(--p))"
+                          : "oklch(var(--bc)/0.3)",
                       }}
                     />
-                    <span className="font-medium">{metric.displayName}</span>
+                    <span className="font-semibold">{metric.displayName}</span>
                   </div>
-                  <div className="text-muted-foreground ml-3.5">
+                  <div className="ml-5 space-y-1 text-muted-foreground">
                     <div>
-                      Avg: {metric.avgOriginal.toFixed(1)} {metric.unit}
+                      Avg: <span className="font-bold">{metric.avgOriginal.toFixed(1)}</span> {metric.unit}
                     </div>
                     <div>
-                      Cycling: {metric.avgCyclingOnly.toFixed(1)} {metric.unit}
+                      Cycling: <span className="font-bold">{metric.avgCyclingOnly.toFixed(1)}</span> {metric.unit}
                     </div>
                     <div>
-                      Range: {metric.min.toFixed(0)}-{metric.max.toFixed(0)}
+                      Range: <span className="font-bold">{metric.min.toFixed(0)}-{metric.max.toFixed(0)}</span>
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

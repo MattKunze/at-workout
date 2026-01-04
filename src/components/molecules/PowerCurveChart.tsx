@@ -1,4 +1,12 @@
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useState } from "react";
+import {
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Line,
+  ComposedChart,
+} from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -8,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PowerCurve } from "../../lib/powerCurveUtils";
 import { formatDuration, getKeyDurations } from "../../lib/powerCurveUtils";
 import type { PowerEffort } from "../../hooks/queries/useAggregatePowerCurves";
+import { useRecentDaysPowerCurve } from "../../hooks/queries/useAggregatePowerCurves";
 
 interface PowerCurveChartProps {
   /** Power curve data calculated from workout */
@@ -17,6 +26,8 @@ interface PowerCurveChartProps {
   /** Current workout ID (to determine which efforts belong to this workout) */
   currentWorkoutId?: string;
 }
+
+type ComparisonPeriod = "30d" | "60d" | "1y" | null;
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -28,19 +39,26 @@ interface CustomTooltipProps {
     payload: {
       duration: number;
       power: number;
+      comparisonPower?: number | null;
       startTime: number;
       durationLabel: string;
     };
   }>;
+  comparisonLabel: string | null;
 }
 
 /**
- * Custom tooltip to show duration, power, and when it occurred
+ * Custom tooltip to show duration, power, comparison data, and when it occurred
  */
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
+function CustomTooltip({
+  active,
+  payload,
+  comparisonLabel,
+}: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
   const data = payload[0].payload;
+  const comparisonData = payload.find((p) => p.dataKey === "comparisonPower");
 
   return (
     <div className="rounded-lg border bg-background p-3 shadow-sm">
@@ -56,6 +74,29 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
             <span className="text-xs text-muted-foreground">watts</span>
           </div>
         </div>
+        {comparisonData && data.comparisonPower != null && (
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground">
+              {comparisonLabel}
+            </span>
+            <div className="flex items-baseline gap-2">
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-base">
+                  {data.comparisonPower.toFixed(0)}
+                </span>
+                <span className="text-xs text-muted-foreground">watts</span>
+              </div>
+              {data.power !== data.comparisonPower && (
+                <span
+                  className={`text-xs ${data.power > data.comparisonPower ? "text-success" : "text-error"}`}
+                >
+                  ({data.power > data.comparisonPower ? "+" : ""}
+                  {(data.power - data.comparisonPower).toFixed(0)}W)
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground">Occurred at</span>
           <span className="text-sm">
@@ -85,11 +126,45 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
  * <PowerCurveChart powerCurve={powerCurve} />
  * ```
  */
-export function PowerCurveChart({ 
-  powerCurve, 
+export function PowerCurveChart({
+  powerCurve,
   topEffortsMap,
-  currentWorkoutId 
+  currentWorkoutId,
 }: PowerCurveChartProps) {
+  // State for comparison period selection
+  const [comparisonPeriod, setComparisonPeriod] =
+    useState<ComparisonPeriod>(null);
+
+  // Fetch comparison data based on selected period
+  const { data: comparison30d } = useRecentDaysPowerCurve(30, {
+    enabled: comparisonPeriod === "30d",
+  });
+  const { data: comparison60d } = useRecentDaysPowerCurve(60, {
+    enabled: comparisonPeriod === "60d",
+  });
+  const { data: comparison1y } = useRecentDaysPowerCurve(365, {
+    enabled: comparisonPeriod === "1y",
+  });
+
+  // Select the active comparison curve
+  const comparisonCurve =
+    comparisonPeriod === "30d"
+      ? comparison30d
+      : comparisonPeriod === "60d"
+        ? comparison60d
+        : comparisonPeriod === "1y"
+          ? comparison1y
+          : null;
+
+  const comparisonLabel =
+    comparisonPeriod === "30d"
+      ? "30 Day"
+      : comparisonPeriod === "60d"
+        ? "60 Day"
+        : comparisonPeriod === "1y"
+          ? "1 Year"
+          : null;
+
   // Helper function to get PR rank for a given duration
   const getPRRank = (duration: number, power: number): number | null => {
     if (!topEffortsMap || !currentWorkoutId) {
@@ -115,28 +190,14 @@ export function PowerCurveChart({
     if (rank === null) return null;
 
     if (rank === 1) {
-      return (
-        <span className="badge badge-sm badge-primary font-bold">
-          PR
-        </span>
-      );
+      return <span className="badge badge-sm badge-primary font-bold">PR</span>;
     } else if (rank <= 3) {
-      return (
-        <span className="badge badge-sm badge-accent">
-          Top {rank}
-        </span>
-      );
+      return <span className="badge badge-sm badge-accent">Top {rank}</span>;
     } else if (rank <= 5) {
-      return (
-        <span className="badge badge-sm badge-ghost">
-          Top {rank}
-        </span>
-      );
+      return <span className="badge badge-sm badge-ghost">Top {rank}</span>;
     } else if (rank <= 10) {
       return (
-        <span className="badge badge-sm badge-ghost text-xs">
-          #{rank}
-        </span>
+        <span className="badge badge-sm badge-ghost text-xs">#{rank}</span>
       );
     }
     return null;
@@ -151,18 +212,28 @@ export function PowerCurveChart({
     );
   }
 
-  // Transform data for chart
-  const chartData = powerCurve.points.map((point) => ({
-    duration: point.duration,
-    power: point.power,
-    startTime: point.startTime,
-    durationLabel: formatDuration(point.duration),
-  }));
+  // Transform data for chart with comparison data
+  const chartData = powerCurve.points.map((point) => {
+    const comparisonPoint = comparisonCurve?.points.find(
+      (cp) => cp.duration === point.duration
+    );
+    return {
+      duration: point.duration,
+      power: point.power,
+      comparisonPower: comparisonPoint?.power ?? null,
+      startTime: point.startTime,
+      durationLabel: formatDuration(point.duration),
+    };
+  });
 
   const chartConfig: ChartConfig = {
     power: {
       label: "Power",
       color: "oklch(var(--p))",
+    },
+    comparisonPower: {
+      label: comparisonLabel || "Comparison",
+      color: "oklch(var(--s))",
     },
   };
 
@@ -185,15 +256,56 @@ export function PowerCurveChart({
   const power20min = powerCurve.points.find((p) => p.duration === 1200)?.power;
   const powerMax = powerCurve.points[powerCurve.points.length - 1]?.power;
 
+  // Get comparison values for benchmark durations
+  const comparison5s = comparisonCurve?.points.find(
+    (p) => p.duration === 5
+  )?.power;
+  const comparison1min = comparisonCurve?.points.find(
+    (p) => p.duration === 60
+  )?.power;
+  const comparison5min = comparisonCurve?.points.find(
+    (p) => p.duration === 300
+  )?.power;
+  const comparison20min = comparisonCurve?.points.find(
+    (p) => p.duration === 1200
+  )?.power;
+
   return (
     <div className="w-full">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>Power Curve</CardTitle>
+          {/* Comparison period selector */}
+          <div className="join">
+            <button
+              className={`btn btn-xs join-item ${comparisonPeriod === "30d" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() =>
+                setComparisonPeriod(comparisonPeriod === "30d" ? null : "30d")
+              }
+            >
+              30d
+            </button>
+            <button
+              className={`btn btn-xs join-item ${comparisonPeriod === "60d" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() =>
+                setComparisonPeriod(comparisonPeriod === "60d" ? null : "60d")
+              }
+            >
+              60d
+            </button>
+            <button
+              className={`btn btn-xs join-item ${comparisonPeriod === "1y" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() =>
+                setComparisonPeriod(comparisonPeriod === "1y" ? null : "1y")
+              }
+            >
+              1y
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[400px] w-full">
-            <AreaChart
+            <ComposedChart
               data={chartData}
               margin={{ top: 5, right: 10, left: 10, bottom: 25 }}
             >
@@ -237,7 +349,9 @@ export function PowerCurveChart({
                   position: "insideLeft",
                 }}
               />
-              <ChartTooltip content={<CustomTooltip />} />
+              <ChartTooltip
+                content={<CustomTooltip comparisonLabel={comparisonLabel} />}
+              />
               <Area
                 type="monotone"
                 dataKey="power"
@@ -246,7 +360,20 @@ export function PowerCurveChart({
                 strokeWidth={3}
                 isAnimationActive={false}
               />
-            </AreaChart>
+              {/* Render comparison as dotted line if present */}
+              {comparisonPeriod && comparisonCurve && (
+                <Line
+                  type="monotone"
+                  dataKey="comparisonPower"
+                  stroke="oklch(var(--s))"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  connectNulls={false}
+                  isAnimationActive={false}
+                />
+              )}
+            </ComposedChart>
           </ChartContainer>
 
           {/* Key power benchmarks */}
@@ -265,6 +392,21 @@ export function PowerCurveChart({
                   </span>
                   <span className="text-muted-foreground">W</span>
                 </div>
+                {comparison5s !== undefined && comparisonPeriod && (
+                  <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                    <div className="flex items-baseline gap-1">
+                      <span>{comparisonLabel}:</span>
+                      <span className="font-semibold">
+                        {comparison5s.toFixed(0)}W
+                      </span>
+                      <div
+                        className={`font-semibold ${power5s / comparison5s >= 0.9 ? "text-success" : "text-warning"}`}
+                      >
+                        ({((power5s / comparison5s) * 100).toFixed(1)}%)
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {power1min !== undefined && (
@@ -281,6 +423,21 @@ export function PowerCurveChart({
                   </span>
                   <span className="text-muted-foreground">W</span>
                 </div>
+                {comparison1min !== undefined && comparisonPeriod && (
+                  <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                    <div className="flex items-baseline gap-1">
+                      <span>{comparisonLabel}:</span>
+                      <span className="font-semibold">
+                        {comparison1min.toFixed(0)}W
+                      </span>
+                      <div
+                        className={`font-semibold ${power1min / comparison1min >= 0.9 ? "text-success" : "text-warning"}`}
+                      >
+                        ({((power1min / comparison1min) * 100).toFixed(1)}%)
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {power5min !== undefined && (
@@ -297,6 +454,21 @@ export function PowerCurveChart({
                   </span>
                   <span className="text-muted-foreground">W</span>
                 </div>
+                {comparison5min !== undefined && comparisonPeriod && (
+                  <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                    <div className="flex items-baseline gap-1">
+                      <span>{comparisonLabel}:</span>
+                      <span className="font-semibold">
+                        {comparison5min.toFixed(0)}W
+                      </span>
+                      <div
+                        className={`font-semibold ${power5min / comparison5min >= 0.9 ? "text-success" : "text-warning"}`}
+                      >
+                        ({((power5min / comparison5min) * 100).toFixed(1)}%)
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {power20min !== undefined && (
@@ -313,6 +485,21 @@ export function PowerCurveChart({
                   </span>
                   <span className="text-muted-foreground">W</span>
                 </div>
+                {comparison20min !== undefined && comparisonPeriod && (
+                  <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                    <div className="flex items-baseline gap-1">
+                      <span>{comparisonLabel}:</span>
+                      <span className="font-semibold">
+                        {comparison20min.toFixed(0)}W
+                      </span>
+                      <div
+                        className={`font-semibold ${power20min / comparison20min >= 0.9 ? "text-success" : "text-warning"}`}
+                      >
+                        ({((power20min / comparison20min) * 100).toFixed(1)}%)
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {powerMax !== undefined && (
