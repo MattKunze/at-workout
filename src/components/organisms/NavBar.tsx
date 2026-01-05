@@ -26,7 +26,7 @@ export const NavBar = () => {
     <div className="navbar bg-base-100 shadow-md">
       <div className="flex-1">
         <Link to="/" className="btn btn-ghost text-xl">
-          Parking App
+          @Workout
         </Link>
         {session && (
           <div className="hidden md:flex ml-4">
