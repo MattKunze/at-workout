@@ -9,7 +9,8 @@
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc -b",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ci": "npm run lint && npm run typecheck"
   },
   "dependencies": {
     "@atcute/client": "^4.1.1",

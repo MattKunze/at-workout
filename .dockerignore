@@ -38,6 +38,10 @@ coverage
 .eslintcache
 .prettierrc
 
+# CI/CD
+.github
+.tangled
+
 # Go build artifacts
 cmd/peloton-oauth/peloton-oauth
 *.exe

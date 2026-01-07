@@ -63,6 +63,55 @@ This creates `build/peloton-oauth` which is executed by the server during authen
 - `cmd/peloton-oauth/` - Go binary for Peloton OAuth flow
 - `build/` - Compiled binaries (gitignored)
 
+## CI/CD
+
+This project uses a hybrid CI/CD approach:
+
+### Pull Request Validation (Tangled)
+- Runs linting and type checking on all PRs targeting `main`
+- Workflows defined in `.tangled/workflows/`
+- View pipeline status at: https://tangled.org/mattkunze.bsky.social/at-workout
+
+### Deployment (GitHub Actions)
+- Builds Docker image on push to `main` branch
+- Pushes to GitHub Container Registry (ghcr.io)
+- Workflow defined in `.github/workflows/deploy.yml`
+- Tagged as `latest` and with commit SHA (e.g., `abc1234`)
+
+### Self-Hosted Deployment
+
+The application is deployed using Docker Compose with Watchtower for automatic updates.
+
+**Image location**: `ghcr.io/mattkunze/at-workout:latest`
+
+**Deployment steps:**
+
+1. Copy `docker-compose.production.yml` to your server
+2. Create a `.env` file with required environment variables (see `.env.example`)
+3. Start the services:
+   ```bash
+   docker-compose -f docker-compose.production.yml up -d
+   ```
+4. Watchtower will automatically pull and deploy new images every 5 minutes
+
+**Monitoring:**
+```bash
+# View application logs
+docker logs at-workout
+
+# View Watchtower logs
+docker logs watchtower
+
+# Check running containers
+docker ps
+```
+
+**Manual update:**
+```bash
+docker-compose -f docker-compose.production.yml pull
+docker-compose -f docker-compose.production.yml up -d
+```
+
 ---
 
 # Original Vite Template README
