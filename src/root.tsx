@@ -5,6 +5,7 @@ import "./index.css";
 import { FloatingActionButton } from "./components/molecules/FloatingActionButton";
 import { AuthProvider } from "./contexts/AuthProvider";
 import { ConnectionsProvider } from "./contexts/ConnectionsProvider";
+import { PreferencesProvider } from "./contexts/PreferencesProvider";
 import { useAuth } from "./contexts/AuthContext";
 
 // Create a client
@@ -70,26 +71,28 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ConnectionsProvider>
-          <html lang="en">
-            <head>
-              <meta charSet="utf-8" />
-              <meta
-                name="viewport"
-                content="width=device-width, initial-scale=1"
-              />
-              <Meta />
-              <Links />
-            </head>
-            <body>
-              <AppContent />
-              <ScrollRestoration />
-              <Scripts />
-            </body>
-          </html>
-        </ConnectionsProvider>
-      </AuthProvider>
+      <PreferencesProvider>
+        <AuthProvider>
+          <ConnectionsProvider>
+            <html lang="en">
+              <head>
+                <meta charSet="utf-8" />
+                <meta
+                  name="viewport"
+                  content="width=device-width, initial-scale=1"
+                />
+                <Meta />
+                <Links />
+              </head>
+              <body>
+                <AppContent />
+                <ScrollRestoration />
+                <Scripts />
+              </body>
+            </html>
+          </ConnectionsProvider>
+        </AuthProvider>
+      </PreferencesProvider>
     </QueryClientProvider>
   );
 }
