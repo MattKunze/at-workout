@@ -77,6 +77,9 @@ This project uses a hybrid CI/CD approach:
 - Pushes to GitHub Container Registry (ghcr.io)
 - Workflow defined in `.github/workflows/deploy.yml`
 - Tagged as `latest` and with commit SHA (e.g., `abc1234`)
+- OAuth configuration is baked into the image at build time
+
+**Important**: OAuth environment variables (`VITE_OAUTH_CLIENT_ID`, `VITE_OAUTH_REDIRECT_URI`) are **build-time** variables. They are hardcoded in the GitHub Actions workflow and bundled into the JavaScript during the Docker build. Runtime `.env` files do not affect these values.
 
 ### Self-Hosted Deployment
 
@@ -87,12 +90,13 @@ The application is deployed using Docker Compose with Watchtower for automatic u
 **Deployment steps:**
 
 1. Copy `docker-compose.production.yml` to your server
-2. Create a `.env` file with required environment variables (see `.env.example`)
-3. Start the services:
+2. Start the services (no `.env` file needed for OAuth):
    ```bash
    docker-compose -f docker-compose.production.yml up -d
    ```
-4. Watchtower will automatically pull and deploy new images every 5 minutes
+3. Watchtower will automatically pull and deploy new images every 5 minutes
+
+**Note**: OAuth configuration (`VITE_OAUTH_CLIENT_ID`, `VITE_OAUTH_REDIRECT_URI`) is baked into the Docker image at build time via GitHub Actions. Runtime environment variables do not affect the OAuth configuration. To change OAuth settings, update `.github/workflows/deploy.yml` and trigger a new build.
 
 **Monitoring:**
 ```bash

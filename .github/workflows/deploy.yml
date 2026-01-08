@@ -47,3 +47,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-to: type=inline
+          build-args: |
+            VITE_OAUTH_CLIENT_ID=https://at-workout.shypan.st/.well-known/oauth-client-metadata
+            VITE_OAUTH_REDIRECT_URI=https://at-workout.shypan.st/

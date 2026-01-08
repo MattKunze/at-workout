@@ -36,6 +36,14 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Accept build arguments for OAuth configuration
+ARG VITE_OAUTH_CLIENT_ID
+ARG VITE_OAUTH_REDIRECT_URI
+
+# Set as environment variables for the build
+ENV VITE_OAUTH_CLIENT_ID=${VITE_OAUTH_CLIENT_ID}
+ENV VITE_OAUTH_REDIRECT_URI=${VITE_OAUTH_REDIRECT_URI}
+
 # Build the application
 RUN npm run build
 
