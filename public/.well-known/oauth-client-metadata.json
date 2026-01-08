@@ -1,5 +1,5 @@
 {
-  "client_id": "https://at-workout.shypan.st/.well-known/oauth-client-metadata",
+  "client_id": "https://at-workout.shypan.st/.well-known/oauth-client-metadata.json",
   "client_name": "AT Workout",
   "client_uri": "https://at-workout.shypan.st",
   "redirect_uris": [
