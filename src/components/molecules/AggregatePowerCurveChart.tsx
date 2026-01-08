@@ -26,6 +26,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PowerCurve } from "../../lib/powerCurveUtils";
 import { formatDuration, getKeyDurations } from "../../lib/powerCurveUtils";
+import { useChartColors } from "../../hooks/useChartColors";
 
 export interface PowerCurveComparison {
   curve: PowerCurve;
@@ -70,7 +71,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   const percentChange = data.percentChange as number;
 
   return (
-    <div className="rounded-lg border bg-background p-3 shadow-sm">
+    <div className="rounded-lg border bg-card p-3 shadow-sm">
       <div className="grid gap-2">
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground">Duration</span>
@@ -231,6 +232,9 @@ export function AggregatePowerCurveChart({
   title = "Power Curve Comparison",
   description,
 }: AggregatePowerCurveChartProps) {
+  // Get theme-aware colors for chart elements
+  const chartColors = useChartColors();
+  
   // State to track which curves are visible
   const [visibleCurves, setVisibleCurves] = useState<Set<string>>(() => {
     // Initialize with all curves visible
@@ -480,10 +484,12 @@ export function AggregatePowerCurveChart({
               tickMargin={8}
               ticks={keyDurations}
               tickFormatter={formatXAxisTick}
+              tick={{ fill: chartColors.foreground }}
               label={{
                 value: "Duration",
                 position: "insideBottom",
                 offset: -20,
+                fill: chartColors.mutedForeground,
               }}
             />
             <YAxis
@@ -492,13 +498,23 @@ export function AggregatePowerCurveChart({
               tickMargin={8}
               domain={yAxisDomain}
               tickFormatter={formatYAxisTick}
+              tick={{ fill: chartColors.foreground }}
               label={{
                 value: "Power (watts)",
                 angle: -90,
                 position: "insideLeft",
+                fill: chartColors.mutedForeground,
               }}
             />
-            <ChartTooltip content={<CustomTooltip />} />
+            <ChartTooltip 
+              content={<CustomTooltip />} 
+              cursor={false}
+              wrapperStyle={{ outline: "none" }}
+              contentStyle={{
+                backgroundColor: chartColors.card,
+                borderColor: chartColors.mutedForeground,
+              }}
+            />
 
             {/* Render each visible curve as an Area */}
             {visibleValidCurves.map(({ label, color }, idx) => (

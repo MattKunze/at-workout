@@ -12,6 +12,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useChartColors } from "../../hooks/useChartColors";
 
 interface WorkoutPerformanceChartProps {
   /** Performance data from Peloton API */
@@ -37,7 +38,7 @@ function CustomTooltip({ active, payload, metricInfo }: CustomTooltipProps) {
   if (!active || !payload) return null;
 
   return (
-    <div className="rounded-lg border bg-background p-3 shadow-sm">
+    <div className="rounded-lg border bg-card p-3 shadow-sm">
       <div className="grid gap-2">
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground">Time</span>
@@ -110,6 +111,9 @@ function CustomTooltip({ active, payload, metricInfo }: CustomTooltipProps) {
 export function WorkoutPerformanceChart({
   performanceData,
 }: WorkoutPerformanceChartProps) {
+  // Get theme-aware colors for chart elements
+  const chartColors = useChartColors();
+  
   const chartData = transformPerformanceDataForChart(performanceData);
   const [normalizedData, metricInfo] = normalizeChartData(
     chartData,
@@ -240,10 +244,12 @@ export function WorkoutPerformanceChart({
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                tick={{ fill: chartColors.foreground }}
                 label={{
                   value: "Time (minutes)",
                   position: "insideBottom",
                   offset: -5,
+                  fill: chartColors.mutedForeground,
                 }}
                 ticks={Array.from(
                   {
@@ -258,6 +264,12 @@ export function WorkoutPerformanceChart({
               />
               <ChartTooltip
                 content={<CustomTooltip metricInfo={metricInfo} />}
+                cursor={false}
+                wrapperStyle={{ outline: "none" }}
+                contentStyle={{
+                  backgroundColor: chartColors.card,
+                  borderColor: chartColors.mutedForeground,
+                }}
               />
 
               {/* Render workout segment backgrounds as area charts */}

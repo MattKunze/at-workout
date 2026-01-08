@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* @layer base {
+@layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
@@ -31,7 +31,8 @@
     --chart-5: 27 87% 67%;
   }
 
-  .dark {
+  /* Dark theme - use data-theme selector to match DaisyUI */
+  [data-theme="dark"] {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -59,11 +60,4 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-} */
+/* Note: Removed @apply rules that conflicted with DaisyUI base styles */

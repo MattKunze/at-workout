@@ -17,6 +17,7 @@ import type { PowerCurve } from "../../lib/powerCurveUtils";
 import { formatDuration, getKeyDurations } from "../../lib/powerCurveUtils";
 import type { PowerEffort } from "../../hooks/queries/useAggregatePowerCurves";
 import { useRecentDaysPowerCurve } from "../../hooks/queries/useAggregatePowerCurves";
+import { useChartColors } from "../../hooks/useChartColors";
 
 interface PowerCurveChartProps {
   /** Power curve data calculated from workout */
@@ -61,7 +62,7 @@ function CustomTooltip({
   const comparisonData = payload.find((p) => p.dataKey === "comparisonPower");
 
   return (
-    <div className="rounded-lg border bg-background p-3 shadow-sm">
+    <div className="rounded-lg border bg-card p-3 shadow-sm">
       <div className="grid gap-2">
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground">Duration</span>
@@ -131,6 +132,9 @@ export function PowerCurveChart({
   topEffortsMap,
   currentWorkoutId,
 }: PowerCurveChartProps) {
+  // Get theme-aware colors for chart elements
+  const chartColors = useChartColors();
+  
   // State for comparison period selection
   const [comparisonPeriod, setComparisonPeriod] =
     useState<ComparisonPeriod>(null);
@@ -333,24 +337,34 @@ export function PowerCurveChart({
                 tickMargin={8}
                 ticks={keyDurations}
                 tickFormatter={formatXAxisTick}
+                tick={{ fill: chartColors.foreground }}
                 label={{
                   value: "Duration",
                   position: "insideBottom",
                   offset: -20,
+                  fill: chartColors.mutedForeground,
                 }}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                tick={{ fill: chartColors.foreground }}
                 label={{
                   value: "Power (watts)",
                   angle: -90,
                   position: "insideLeft",
+                  fill: chartColors.mutedForeground,
                 }}
               />
               <ChartTooltip
                 content={<CustomTooltip comparisonLabel={comparisonLabel} />}
+                cursor={false}
+                wrapperStyle={{ outline: "none" }}
+                contentStyle={{
+                  backgroundColor: chartColors.card,
+                  borderColor: chartColors.mutedForeground,
+                }}
               />
               <Area
                 type="monotone"

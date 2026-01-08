@@ -72,7 +72,7 @@ export const FloatingActionButton = ({
         </div>
         <ul
           tabIndex={0}
-          className="dropdown-content menu menu-sm bg-base-100 rounded-box w-52 p-2 shadow-xl mb-2"
+          className="dropdown-content menu bg-base-100 rounded-box w-56 p-2 shadow-xl mb-2"
         >
           <li className="menu-title text-opacity-100 text-base-content">
             <div className="flex flex-col gap-1 py-2 px-0">
@@ -86,16 +86,36 @@ export const FloatingActionButton = ({
           </li>
           <div className="divider my-0"></div>
           <li>
-            <a onClick={() => handleMenuClick(onDashboardClick)}>Dashboard</a>
+            <a 
+              onClick={() => handleMenuClick(onDashboardClick)}
+              className="py-3"
+            >
+              Dashboard
+            </a>
           </li>
           <li>
-            <a onClick={() => handleMenuClick(onPowerHistoryClick)}>Power History</a>
+            <a 
+              onClick={() => handleMenuClick(onPowerHistoryClick)}
+              className="py-3"
+            >
+              Power History
+            </a>
           </li>
           <li>
-            <a onClick={() => handleMenuClick(onPreferencesClick)}>Preferences</a>
+            <a 
+              onClick={() => handleMenuClick(onPreferencesClick)}
+              className="py-3"
+            >
+              Preferences
+            </a>
           </li>
           <li>
-            <a onClick={() => handleMenuClick(onLogoutClick)}>Logout</a>
+            <a 
+              onClick={() => handleMenuClick(onLogoutClick)}
+              className="py-3"
+            >
+              Logout
+            </a>
           </li>
         </ul>
       </div>
