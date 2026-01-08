@@ -59,9 +59,10 @@ RUN apk add --no-cache dumb-init
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy the Go binary from go-builder stage
-COPY --from=go-builder /app/cmd/peloton-oauth/peloton-oauth /usr/local/bin/peloton-oauth
-RUN chmod +x /usr/local/bin/peloton-oauth
+# Create bin directory and copy the Go binary from go-builder stage
+RUN mkdir -p /app/bin
+COPY --from=go-builder /app/cmd/peloton-oauth/peloton-oauth /app/bin/peloton-oauth
+RUN chmod +x /app/bin/peloton-oauth
 
 # Copy package files and install only production dependencies
 COPY package*.json ./
