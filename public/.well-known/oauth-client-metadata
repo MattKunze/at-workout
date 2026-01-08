@@ -1,0 +1,19 @@
+{
+  "client_id": "https://at-workout.shypan.st",
+  "client_name": "AT Workout",
+  "client_uri": "https://at-workout.shypan.st",
+  "redirect_uris": [
+    "https://at-workout.shypan.st/"
+  ],
+  "scope": "atproto",
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "token_endpoint_auth_method": "none",
+  "application_type": "web",
+  "dpop_bound_access_tokens": true
+}
