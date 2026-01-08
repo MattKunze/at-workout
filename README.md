@@ -65,14 +65,13 @@ This creates `build/peloton-oauth` which is executed by the server during authen
 
 ## CI/CD
 
-This project uses a hybrid CI/CD approach:
+This project uses GitHub Actions for CI/CD:
 
-### Pull Request Validation (Tangled)
+### Pull Request Validation
 - Runs linting and type checking on all PRs targeting `main`
-- Workflows defined in `.tangled/workflows/`
-- View pipeline status at: https://tangled.org/mattkunze.bsky.social/at-workout
+- Workflow defined in `.github/workflows/ci.yml`
 
-### Deployment (GitHub Actions)
+### Deployment
 - Builds Docker image on push to `main` branch
 - Pushes to GitHub Container Registry (ghcr.io)
 - Workflow defined in `.github/workflows/deploy.yml`

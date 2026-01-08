@@ -1,5 +1,11 @@
 # Project Agent Instructions
 
+## Git and Version Control
+- **DO NOT push changes to remote repositories unless explicitly requested by the user**
+- **DO NOT run `git push` commands without explicit permission**
+- You may create commits when requested, but always ask before pushing
+- Exception: When the user explicitly asks you to "push" or "deploy" changes
+
 ## Quality Standards
 - **Verification:** After completing any feature or modification, always run the project's linting (`npm run lint`) and type-checking (`npm run typecheck`) commands.
 - **Resolution:** All errors and warnings introduced by your changes must be resolved before the task is considered complete.
